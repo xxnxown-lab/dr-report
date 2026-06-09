@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
-import { PRODUCT_LIST, HOHOEMI_PRODUCT_LIST } from '@/lib/constants';
+import { PRODUCT_LIST, HOHOEMI_PRODUCT_LIST, HOHOEMI_CODE_MAP } from '@/lib/constants';
 import { parseSheetText, matchDayToLabel, keywordMap, hohoKeywordMap } from '@/lib/parseSheet';
 import type { ReportRow, ChangeSymbol } from '@/lib/types';
 
@@ -58,7 +58,10 @@ export async function POST(req: NextRequest) {
     }
 
     for (const p of parsedToday.products) {
-      if (!codeToReport.has(p.code)) codeToReport.set(p.code, kwMap(p.name));
+      if (!codeToReport.has(p.code)) {
+        const byCode = isHoho ? (HOHOEMI_CODE_MAP[p.code] ?? null) : null;
+        codeToReport.set(p.code, byCode ?? kwMap(p.name));
+      }
     }
 
     const todayQtyMap = new Map<string, number>();
@@ -73,7 +76,8 @@ export async function POST(req: NextRequest) {
     const prevQtyMap = new Map<string, number>();
     let brandTotalPrev = 0;
     for (const p of parsedPrev.products) {
-      const reportName = kwMap(p.name);
+      const byCode = isHoho ? (HOHOEMI_CODE_MAP[p.code] ?? null) : null;
+      const reportName = byCode ?? kwMap(p.name);
       const qty = prevLabel ? (p.quantities[prevLabel] ?? 0) : 0;
       if (reportName) prevQtyMap.set(reportName, (prevQtyMap.get(reportName) ?? 0) + qty);
       else brandTotalPrev += qty;

@@ -129,11 +129,11 @@ export function keywordMap(productName: string): string | null {
 export function hohoKeywordMap(productName: string): string | null {
   const n = productName.toLowerCase();
   if (n.includes('무향') && n.includes('세제')) return '무향세제';
+  if (n.includes('라임') && n.includes('유연')) return '라임유연제';
+  if (n.includes('라임') && n.includes('세제')) return '라임세제';
   if (n.includes('섬유') || n.includes('유연제')) return '섬유유연제';
   if (n.includes('바스샴푸') || (n.includes('바스') && n.includes('샴푸'))) return '바스샴푸';
   if (n.includes('주방')) return '주방세제';
-  if (n.includes('라임') && n.includes('유연')) return '라임유연제';
-  if (n.includes('라임') && n.includes('세제')) return '라임세제';
   if (n.includes('선크림') || n.includes('선스크린')) return '선크림';
   if (n.includes('손세정') || (n.includes('손') && n.includes('세정'))) return '손세정제';
   if (n.includes('수딩')) return '수딩겔';

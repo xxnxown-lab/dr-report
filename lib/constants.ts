@@ -38,5 +38,20 @@ export const HOHOEMI_PRODUCT_LIST = [
   { grade: 'B' as const, name: '수딩겔' },
 ];
 
+export const HOHOEMI_CODE_MAP: Record<string, string> = {
+  'Ho-001': '무향세제',
+  'Ho-002': '섬유유연제',
+  'Ho-003': '라임세제',
+  'Ho-004': '라임유연제',
+  'Ho-005': '주방세제',
+  'Ho-009': '로션',
+  'Ho-010': '크림',
+  'Ho-011': '수딩겔',
+  'Ho-012': '바스샴푸',
+  'Ho-013': '선크림',
+  'Ho-014': '오일',
+  'Ho-015': '손세정제',
+};
+
 export type Grade = 'A' | 'B' | 'C';
 export type Brand = 'dr' | 'hoho';
