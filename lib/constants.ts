@@ -23,18 +23,20 @@ export const PRODUCT_LIST = [
   { grade: 'C' as const, name: '샴푸' },
 ];
 
-export const CHANNELS = [
-  '스파크애즈tiktok',
-  '브랜디드Ins',
-  '카페질문글',
-  '카페댓글',
-  '체험단',
-  '챌린저스',
-  '잡지형tiktok',
-  '틱톡메뉴tiktok',
-  '유머Ins',
-  '유머Yt',
-] as const;
+export const HOHOEMI_PRODUCT_LIST = [
+  { grade: 'A' as const, name: '무향세제' },
+  { grade: 'A' as const, name: '섬유유연제' },
+  { grade: 'A' as const, name: '바스샴푸' },
+  { grade: 'A' as const, name: '주방세제' },
+  { grade: 'A' as const, name: '크림' },
+  { grade: 'A' as const, name: '로션' },
+  { grade: 'A' as const, name: '라임세제' },
+  { grade: 'A' as const, name: '라임유연제' },
+  { grade: 'B' as const, name: '선크림' },
+  { grade: 'B' as const, name: '손세정제' },
+  { grade: 'B' as const, name: '오일' },
+  { grade: 'B' as const, name: '수딩겔' },
+];
 
-export type Channel = (typeof CHANNELS)[number];
 export type Grade = 'A' | 'B' | 'C';
+export type Brand = 'dr' | 'hoho';

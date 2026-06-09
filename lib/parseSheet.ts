@@ -1,13 +1,12 @@
 import type { ParsedSheet, SheetProduct } from './types';
 
-export function parseSheetText(text: string): ParsedSheet {
+export function parseSheetText(text: string, codePrefix = 'Dr-'): ParsedSheet {
   const lines = text.split('\n');
   const rows = lines.map((line) => line.split('\t'));
   const nonEmpty = rows.filter((r) => r.some((c) => c.trim() !== ''));
 
   if (nonEmpty.length < 3) return { dateLabels: [], products: [] };
 
-  // Find date header row: contains patterns like "15(금)" or "15(금) 오전"
   let dateRowIdx = -1;
   for (let i = 0; i < nonEmpty.length; i++) {
     if (nonEmpty[i].some((c) => /\d+\([가-힣]+\)/.test(c.trim()))) {
@@ -17,7 +16,6 @@ export function parseSheetText(text: string): ParsedSheet {
   }
   if (dateRowIdx === -1) return { dateLabels: [], products: [] };
 
-  // Find channel row: contains 오켓, 카페, 네버
   let channelRowIdx = -1;
   for (let i = dateRowIdx + 1; i < nonEmpty.length; i++) {
     if (nonEmpty[i].some((c) => ['오켓', '카페', '네버'].includes(c.trim()))) {
@@ -31,7 +29,6 @@ export function parseSheetText(text: string): ParsedSheet {
   const channelRow = nonEmpty[channelRowIdx];
   const maxCols = Math.max(dateRow.length, channelRow.length);
 
-  // Build map: dateLabel -> [colIndices]
   const dateColMap = new Map<string, number[]>();
   let currentLabel = '';
 
@@ -54,7 +51,6 @@ export function parseSheetText(text: string): ParsedSheet {
 
   const dateLabels = Array.from(dateColMap.keys());
 
-  // Auto-detect code column (first column with "Xx-000" pattern in any data row)
   let codeCol = 0;
   for (let i = channelRowIdx + 1; i < nonEmpty.length; i++) {
     const row = nonEmpty[i];
@@ -68,7 +64,6 @@ export function parseSheetText(text: string): ParsedSheet {
   }
   const nameCol = codeCol + 1;
 
-  // Parse Dr-* product rows
   const products: SheetProduct[] = [];
 
   for (let i = channelRowIdx + 1; i < nonEmpty.length; i++) {
@@ -76,7 +71,7 @@ export function parseSheetText(text: string): ParsedSheet {
     const code = (row[codeCol] || '').trim();
     const name = (row[nameCol] || '').trim();
 
-    if (!code.startsWith('Dr-') || !name) continue;
+    if (!code.startsWith(codePrefix) || !name) continue;
 
     const quantities: Record<string, number> = {};
     for (const [label, cols] of dateColMap) {
@@ -128,5 +123,22 @@ export function keywordMap(productName: string): string | null {
   if (n.includes('치약') || n.includes('투스페이스트')) return '치약';
   if (n.includes('샴푸')) return '샴푸';
   if (n.includes('유산균') || n.includes('프로바이오틱스')) return '유산균';
+  return null;
+}
+
+export function hohoKeywordMap(productName: string): string | null {
+  const n = productName.toLowerCase();
+  if (n.includes('무향') && n.includes('세제')) return '무향세제';
+  if (n.includes('섬유') || n.includes('유연제')) return '섬유유연제';
+  if (n.includes('바스샴푸') || (n.includes('바스') && n.includes('샴푸'))) return '바스샴푸';
+  if (n.includes('주방')) return '주방세제';
+  if (n.includes('라임') && n.includes('유연')) return '라임유연제';
+  if (n.includes('라임') && n.includes('세제')) return '라임세제';
+  if (n.includes('선크림') || n.includes('선스크린')) return '선크림';
+  if (n.includes('손세정') || (n.includes('손') && n.includes('세정'))) return '손세정제';
+  if (n.includes('수딩')) return '수딩겔';
+  if (n.includes('오일')) return '오일';
+  if (n.includes('크림')) return '크림';
+  if (n.includes('로션')) return '로션';
   return null;
 }

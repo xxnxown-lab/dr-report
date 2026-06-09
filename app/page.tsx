@@ -1,20 +1,12 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { CHANNELS } from '@/lib/constants';
-import type { Channel } from '@/lib/constants';
+import type { Brand } from '@/lib/constants';
 import type { ReportRow } from '@/lib/types';
 import { downloadExcel } from '@/lib/excel';
 
 function fmt(n: number): string {
   return n.toLocaleString('ko-KR');
-}
-
-function calcTotal(row: ReportRow): number {
-  return CHANNELS.reduce((sum, ch) => {
-    const v = parseInt((row.channels[ch].amount || '').replace(/,/g, ''), 10);
-    return sum + (isNaN(v) ? 0 : v);
-  }, 0);
 }
 
 function toDateLabel(dateStr: string): string {
@@ -37,16 +29,15 @@ async function fetchTabText(url: string): Promise<string> {
   return data.text;
 }
 
+const BRAND_LABELS: Record<Brand, string> = { dr: '닥터아돌', hoho: '호호에미' };
+
 export default function Home() {
+  const [brand, setBrand] = useState<Brand>('dr');
   const [inputMode, setInputMode] = useState<'url' | 'paste'>('url');
 
-  // URL 모드: 각 탭의 URL을 직접 입력
   const [todayUrl, setTodayUrl] = useState('');
   const [prevUrl, setPrevUrl] = useState('');
-
-  // 붙여넣기 모드: 텍스트 하나
   const [pasteText, setPasteText] = useState('');
-
   const [todayDate, setTodayDate] = useState('');
   const [prevDate, setPrevDate] = useState('');
 
@@ -57,6 +48,12 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
+
+  const handleBrandChange = useCallback((b: Brand) => {
+    setBrand(b);
+    setReportRows([]);
+    setError('');
+  }, []);
 
   const handleGenerate = useCallback(async () => {
     if (inputMode === 'url' && (!todayUrl.trim() || !prevUrl.trim())) {
@@ -80,7 +77,7 @@ export default function Home() {
       const res = await fetch('/api/parse', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ todayText: tText, prevText: pText, todayDate, prevDate }),
+        body: JSON.stringify({ todayText: tText, prevText: pText, todayDate, prevDate, brand }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
@@ -93,62 +90,53 @@ export default function Home() {
     } finally {
       setLoading(false);
     }
-  }, [inputMode, todayUrl, prevUrl, pasteText, todayDate, prevDate]);
-
-  const updateChannel = useCallback((rowIdx: number, ch: Channel, field: 'qty' | 'amount', value: string) => {
-    setReportRows((prev) => {
-      const next = prev.map((r, i) =>
-        i !== rowIdx ? r : { ...r, channels: { ...r.channels, [ch]: { ...r.channels[ch], [field]: value } } }
-      );
-      const sumIdx = next.findIndex((r) => r.name === '합계');
-      if (sumIdx === -1) return next;
-      const newCh = { ...next[sumIdx].channels };
-      for (const channel of CHANNELS) {
-        let qty = 0, amount = 0;
-        next.forEach((r, i) => {
-          if (i === sumIdx) return;
-          qty += parseInt((r.channels[channel].qty || '').replace(/,/g, ''), 10) || 0;
-          amount += parseInt((r.channels[channel].amount || '').replace(/,/g, ''), 10) || 0;
-        });
-        newCh[channel] = { qty: qty > 0 ? String(qty) : '', amount: amount > 0 ? String(amount) : '' };
-      }
-      const updated = [...next];
-      updated[sumIdx] = { ...next[sumIdx], channels: newCh };
-      return updated;
-    });
-  }, []);
+  }, [brand, inputMode, todayUrl, prevUrl, pasteText, todayDate, prevDate]);
 
   const handleCopy = useCallback(async () => {
     if (!reportRows.length) return;
-    const h1 = ['등급', '제품', '합계', ...CHANNELS.flatMap((ch) => [ch, '']), prevLabel, todayLabel, '기호'];
-    const h2 = ['', '', '', ...CHANNELS.flatMap(() => ['수량', '금액']), '', '', ''];
+    const header = ['등급', '제품', prevLabel, todayLabel, '기호'];
     const dataRows = reportRows.map((row) => [
-      row.grade ?? '', row.name, calcTotal(row) || '',
-      ...CHANNELS.flatMap((ch) => [row.channels[ch].qty, row.channels[ch].amount]),
+      row.grade ?? '', row.name,
       row.prevQty || '', row.todayQty || '', row.changeSymbol,
     ]);
-    await navigator.clipboard.writeText([h1, h2, ...dataRows].map((r) => r.join('\t')).join('\n'));
+    await navigator.clipboard.writeText([header, ...dataRows].map((r) => r.join('\t')).join('\n'));
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }, [reportRows, prevLabel, todayLabel]);
 
   const handleDownload = useCallback(() => {
     if (!reportRows.length) return;
-    downloadExcel(reportRows, reportDate, prevLabel, todayLabel);
-  }, [reportRows, reportDate, prevLabel, todayLabel]);
+    downloadExcel(reportRows, reportDate, prevLabel, todayLabel, BRAND_LABELS[brand]);
+  }, [reportRows, reportDate, prevLabel, todayLabel, brand]);
 
   const gradeSpans: Record<string, number> = {};
   const gradeSeen = new Set<string>();
   reportRows.forEach((r) => { if (r.grade) gradeSpans[r.grade] = (gradeSpans[r.grade] || 0) + 1; });
 
+  const brandLabel = BRAND_LABELS[brand];
+
   return (
     <div className="min-h-screen bg-gray-50 p-4">
       <h1 className="text-xl font-bold text-gray-800 mb-4">
-        dr 결과보고 {reportDate || toMMDD(todayDate) || '--'}
+        {brandLabel} 결과보고 {reportDate || toMMDD(todayDate) || '--'}
       </h1>
 
+      {/* 브랜드 탭 */}
+      <div className="flex gap-2 mb-4">
+        {(['dr', 'hoho'] as Brand[]).map((b) => (
+          <button key={b} onClick={() => handleBrandChange(b)}
+            className={`px-5 py-2 rounded-lg font-semibold text-sm transition-colors ${
+              brand === b
+                ? b === 'dr' ? 'bg-blue-700 text-white shadow' : 'bg-red-600 text-white shadow'
+                : 'bg-white text-gray-600 border border-gray-300 hover:bg-gray-50'
+            }`}>
+            {BRAND_LABELS[b]}
+          </button>
+        ))}
+      </div>
+
       <div className="bg-white rounded-lg shadow p-4 mb-4 max-w-3xl">
-        {/* 모드 탭 */}
+        {/* 입력 모드 탭 */}
         <div className="flex gap-2 mb-4">
           <button onClick={() => setInputMode('url')}
             className={`px-4 py-1.5 rounded text-sm font-medium ${inputMode === 'url' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'}`}>
@@ -191,7 +179,6 @@ export default function Home() {
           </div>
         )}
 
-        {/* 날짜 + 생성 버튼 */}
         <div className="flex flex-wrap gap-4 mt-4 items-center">
           <label className="flex items-center gap-2 text-sm">
             <span className="text-gray-600 whitespace-nowrap">당일 날짜:</span>
@@ -218,7 +205,7 @@ export default function Home() {
           <div className="flex gap-2 p-3 border-b">
             <button onClick={handleCopy}
               className="px-4 py-1.5 bg-green-600 text-white rounded text-sm font-medium">
-              {copied ? '복사됨!' : 'ERP 붙여넣기용 복사'}
+              {copied ? '복사됨!' : '클립보드 복사'}
             </button>
             <button onClick={handleDownload}
               className="px-4 py-1.5 bg-orange-600 text-white rounded text-sm font-medium">
@@ -230,66 +217,37 @@ export default function Home() {
             <table className="text-xs border-collapse w-full">
               <thead>
                 <tr className="bg-blue-800 text-white">
-                  <th className="border border-blue-700 px-2 py-1 whitespace-nowrap" rowSpan={2}>등급</th>
-                  <th className="border border-blue-700 px-2 py-1 whitespace-nowrap" rowSpan={2}>제품</th>
-                  <th className="border border-blue-700 px-2 py-1 whitespace-nowrap" rowSpan={2}>합계</th>
-                  {CHANNELS.map((ch) => (
-                    <th key={ch} className="border border-blue-700 px-2 py-1 whitespace-nowrap text-center" colSpan={2}>{ch}</th>
-                  ))}
-                  <th className="border border-blue-700 px-2 py-1 whitespace-nowrap text-center" rowSpan={2}>{prevLabel}</th>
-                  <th className="border border-blue-700 px-2 py-1 whitespace-nowrap text-center" rowSpan={2}>{todayLabel}</th>
-                  <th className="border border-blue-700 px-2 py-1" rowSpan={2}>기호</th>
-                </tr>
-                <tr className="bg-blue-700 text-white">
-                  {CHANNELS.map((ch) => (
-                    <>
-                      <th key={`${ch}-q`} className="border border-blue-600 px-1 py-1 text-center">수</th>
-                      <th key={`${ch}-a`} className="border border-blue-600 px-1 py-1 text-center">금</th>
-                    </>
-                  ))}
+                  <th className="border border-blue-700 px-3 py-1.5 whitespace-nowrap">등급</th>
+                  <th className="border border-blue-700 px-3 py-1.5 whitespace-nowrap">제품</th>
+                  <th className="border border-blue-700 px-3 py-1.5 whitespace-nowrap text-center">{prevLabel}</th>
+                  <th className="border border-blue-700 px-3 py-1.5 whitespace-nowrap text-center">{todayLabel}</th>
+                  <th className="border border-blue-700 px-3 py-1.5">기호</th>
                 </tr>
               </thead>
               <tbody>
                 {reportRows.map((row, rowIdx) => {
                   const isFirst = row.grade && !gradeSeen.has(row.grade);
                   if (row.grade) gradeSeen.add(row.grade);
-                  const rowTotal = calcTotal(row);
+                  const isBrandRow = row.isSpecial && row.name !== '합계';
                   const bg = row.name === '합계' ? 'bg-gray-200 font-bold' : row.isSpecial ? 'bg-gray-100 font-semibold' : '';
                   return (
                     <tr key={rowIdx} className={`hover:bg-yellow-50 ${bg}`}>
                       {isFirst && row.grade ? (
-                        <td className="border border-gray-300 px-2 py-0.5 text-center font-bold bg-blue-50"
+                        <td className="border border-gray-300 px-3 py-1 text-center font-bold bg-blue-50"
                           rowSpan={gradeSpans[row.grade]}>{row.grade}</td>
                       ) : !row.grade ? (
-                        <td className="border border-gray-300 px-2 py-0.5" />
+                        <td className="border border-gray-300 px-3 py-1" />
                       ) : null}
-                      <td className="border border-gray-300 px-2 py-0.5 whitespace-nowrap">{row.name}</td>
-                      <td className="border border-gray-300 px-2 py-0.5 text-right">
-                        {rowTotal > 0 ? rowTotal.toLocaleString('ko-KR') : '-'}
+                      <td className="border border-gray-300 px-3 py-1 whitespace-nowrap">{row.name}</td>
+                      <td className="border border-gray-300 px-3 py-1 text-right">
+                        {isBrandRow ? '' : (row.prevQty > 0 ? fmt(row.prevQty) : '-')}
                       </td>
-                      {CHANNELS.map((ch) => (
-                        <>
-                          <td key={`${rowIdx}-${ch}-q`} className="border border-gray-300 p-0">
-                            <input className="w-12 text-right px-1 py-0.5 text-xs bg-transparent focus:bg-blue-50 focus:outline-none"
-                              value={row.channels[ch].qty}
-                              onChange={(e) => updateChannel(rowIdx, ch as Channel, 'qty', e.target.value)} />
-                          </td>
-                          <td key={`${rowIdx}-${ch}-a`} className="border border-gray-300 p-0">
-                            <input className="w-20 text-right px-1 py-0.5 text-xs bg-transparent focus:bg-blue-50 focus:outline-none"
-                              value={row.channels[ch].amount}
-                              onChange={(e) => updateChannel(rowIdx, ch as Channel, 'amount', e.target.value)} />
-                          </td>
-                        </>
-                      ))}
-                      <td className="border border-gray-300 px-2 py-0.5 text-right">
-                        {row.name === '닥터아돌' ? '' : fmt(row.prevQty)}
+                      <td className="border border-gray-300 px-3 py-1 text-right">
+                        {isBrandRow ? '' : (row.todayQty > 0 ? fmt(row.todayQty) : '-')}
                       </td>
-                      <td className="border border-gray-300 px-2 py-0.5 text-right">
-                        {row.name === '닥터아돌' ? '' : fmt(row.todayQty)}
-                      </td>
-                      <td className={`border border-gray-300 px-2 py-0.5 text-center font-bold ${
+                      <td className={`border border-gray-300 px-3 py-1 text-center font-bold ${
                         row.changeSymbol === '▲' ? 'text-red-500' : row.changeSymbol === '▽' ? 'text-blue-500' : 'text-gray-400'
-                      }`}>{row.name === '닥터아돌' ? '' : row.changeSymbol}</td>
+                      }`}>{isBrandRow ? '' : row.changeSymbol}</td>
                     </tr>
                   );
                 })}

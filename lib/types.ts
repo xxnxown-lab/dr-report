@@ -1,19 +1,11 @@
-import type { Channel, Grade } from './constants';
+import type { Grade } from './constants';
 
 export type ChangeSymbol = '▲' | '▽' | '-';
-
-export interface ChannelData {
-  qty: string;
-  amount: string;
-}
-
-export type ChannelMap = Record<Channel, ChannelData>;
 
 export interface ReportRow {
   grade: Grade | null;
   name: string;
   isSpecial: boolean;
-  channels: ChannelMap;
   prevQty: number;
   todayQty: number;
   changeSymbol: ChangeSymbol;
