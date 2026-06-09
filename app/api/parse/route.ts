@@ -95,7 +95,10 @@ export async function POST(req: NextRequest) {
     const totalPrev = rows.filter((r) => !r.isSpecial).reduce((s, r) => s + r.prevQty, 0);
     rows.push({ grade: null, name: '합계', isSpecial: true, todayQty: totalToday, prevQty: totalPrev, changeSymbol: symbol(totalToday, totalPrev) });
 
-    return NextResponse.json({ rows });
+    const grandTotalToday = totalToday + brandTotal;
+    const grandTotalPrev = totalPrev + brandTotalPrev;
+
+    return NextResponse.json({ rows, grandTotalToday, grandTotalPrev });
   } catch (err) {
     console.error(err);
     return NextResponse.json({ error: '처리 중 오류가 발생했습니다.' }, { status: 500 });

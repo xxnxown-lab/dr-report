@@ -45,6 +45,8 @@ export default function Home() {
   const [reportDate, setReportDate] = useState('');
   const [prevLabel, setPrevLabel] = useState('');
   const [todayLabel, setTodayLabel] = useState('');
+  const [grandTotalToday, setGrandTotalToday] = useState<number | null>(null);
+  const [grandTotalPrev, setGrandTotalPrev] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
@@ -85,6 +87,8 @@ export default function Home() {
       setReportDate(toMMDD(todayDate));
       setPrevLabel(toDateLabel(prevDate));
       setTodayLabel(toDateLabel(todayDate));
+      setGrandTotalToday(data.grandTotalToday ?? null);
+      setGrandTotalPrev(data.grandTotalPrev ?? null);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : '오류가 발생했습니다.');
     } finally {
@@ -214,14 +218,14 @@ export default function Home() {
           </div>
 
           <div className="overflow-x-auto">
-            <table className="text-xs border-collapse w-full">
+            <table className="text-xs border-collapse">
               <thead>
                 <tr className="bg-blue-800 text-white">
-                  <th className="border border-blue-700 px-3 py-1.5 whitespace-nowrap">등급</th>
-                  <th className="border border-blue-700 px-3 py-1.5 whitespace-nowrap">제품</th>
-                  <th className="border border-blue-700 px-3 py-1.5 whitespace-nowrap text-center">{prevLabel}</th>
-                  <th className="border border-blue-700 px-3 py-1.5 whitespace-nowrap text-center">{todayLabel}</th>
-                  <th className="border border-blue-700 px-3 py-1.5">기호</th>
+                  <th className="border border-blue-700 px-2 py-1 whitespace-nowrap">등급</th>
+                  <th className="border border-blue-700 px-2 py-1 whitespace-nowrap">제품</th>
+                  <th className="border border-blue-700 px-2 py-1 whitespace-nowrap text-center">{prevLabel}</th>
+                  <th className="border border-blue-700 px-2 py-1 whitespace-nowrap text-center">{todayLabel}</th>
+                  <th className="border border-blue-700 px-2 py-1">기호</th>
                 </tr>
               </thead>
               <tbody>
@@ -233,19 +237,19 @@ export default function Home() {
                   return (
                     <tr key={rowIdx} className={`hover:bg-yellow-50 ${bg}`}>
                       {isFirst && row.grade ? (
-                        <td className="border border-gray-300 px-3 py-1 text-center font-bold bg-blue-50"
+                        <td className="border border-gray-300 px-2 py-0.5 text-center font-bold bg-blue-50"
                           rowSpan={gradeSpans[row.grade]}>{row.grade}</td>
                       ) : !row.grade ? (
-                        <td className="border border-gray-300 px-3 py-1" />
+                        <td className="border border-gray-300 px-2 py-0.5" />
                       ) : null}
-                      <td className="border border-gray-300 px-3 py-1 whitespace-nowrap">{row.name}</td>
-                      <td className="border border-gray-300 px-3 py-1 text-right">
+                      <td className="border border-gray-300 px-2 py-0.5 whitespace-nowrap">{row.name}</td>
+                      <td className="border border-gray-300 px-2 py-0.5 text-right">
                         {isBrandRow ? '' : (row.prevQty > 0 ? fmt(row.prevQty) : '-')}
                       </td>
-                      <td className="border border-gray-300 px-3 py-1 text-right">
+                      <td className="border border-gray-300 px-2 py-0.5 text-right">
                         {isBrandRow ? '' : (row.todayQty > 0 ? fmt(row.todayQty) : '-')}
                       </td>
-                      <td className={`border border-gray-300 px-3 py-1 text-center font-bold ${
+                      <td className={`border border-gray-300 px-2 py-0.5 text-center font-bold ${
                         row.changeSymbol === '▲' ? 'text-red-500' : row.changeSymbol === '▽' ? 'text-blue-500' : 'text-gray-400'
                       }`}>{isBrandRow ? '' : row.changeSymbol}</td>
                     </tr>
@@ -254,6 +258,16 @@ export default function Home() {
               </tbody>
             </table>
           </div>
+
+          {grandTotalToday !== null && grandTotalPrev !== null && (
+            <div className="px-3 py-2 border-t text-sm text-gray-700">
+              <span className="font-semibold">{brandLabel} 전체 판매량</span>
+              <span className="mx-3 text-gray-400">|</span>
+              <span>{prevLabel}: <strong>{fmt(grandTotalPrev)}개</strong></span>
+              <span className="mx-3 text-gray-400">→</span>
+              <span>{todayLabel}: <strong>{fmt(grandTotalToday)}개</strong></span>
+            </div>
+          )}
         </div>
       )}
     </div>
