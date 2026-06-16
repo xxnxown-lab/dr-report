@@ -1,6 +1,6 @@
 import type { Grade } from './constants';
 
-export type ChangeSymbol = '▲' | '▽' | '-';
+export type ChangeSymbol = '▲' | '▽' | '-' | '';
 
 export interface ReportRow {
   grade: Grade | null;

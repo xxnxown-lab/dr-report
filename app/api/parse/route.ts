@@ -1,13 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
-import { PRODUCT_LIST, HOHOEMI_PRODUCT_LIST, HOHOEMI_CODE_MAP } from '@/lib/constants';
+import { HOHOEMI_CODE_MAP, BANCOR_CODE_MAP, ODROY_CODE_MAP, CHUNGMIJUNG_CODE_MAP, BIOGA_CODE_MAP, BRAND_CONFIG, BRAND_PRODUCT_LISTS } from '@/lib/constants';
 import { parseSheetText, matchDayToLabel, keywordMap, hohoKeywordMap } from '@/lib/parseSheet';
 import type { ReportRow, ChangeSymbol } from '@/lib/types';
+import type { Brand } from '@/lib/constants';
 
-function symbol(today: number, prev: number): ChangeSymbol {
+function symbol(today: number, prev: number, blankOnEqual = false): ChangeSymbol {
   if (today > prev) return '▲';
   if (today < prev) return '▽';
-  return '-';
+  return blankOnEqual ? '' : '-';
+}
+
+function getKwMap(brand: Brand): (name: string) => string | null {
+  if (brand === 'dr') return keywordMap;
+  if (brand === 'hoho') return hohoKeywordMap;
+  return () => null;
+}
+
+function getCodeMap(brand: Brand): Record<string, string> {
+  if (brand === 'hoho') return HOHOEMI_CODE_MAP;
+  if (brand === 'bancor') return BANCOR_CODE_MAP;
+  if (brand === 'odroy') return ODROY_CODE_MAP;
+  if (brand === 'chungmijung') return CHUNGMIJUNG_CODE_MAP;
+  if (brand === 'bioga') return BIOGA_CODE_MAP;
+  return {};
 }
 
 export async function POST(req: NextRequest) {
@@ -17,11 +33,14 @@ export async function POST(req: NextRequest) {
     if (!todayText?.trim()) return NextResponse.json({ error: '당일 데이터를 입력해주세요.' }, { status: 400 });
     if (!prevText?.trim()) return NextResponse.json({ error: '비교일 데이터를 입력해주세요.' }, { status: 400 });
 
-    const isHoho = brand === 'hoho';
-    const codePrefix = isHoho ? 'Ho-' : 'Dr-';
-    const productList = isHoho ? HOHOEMI_PRODUCT_LIST : PRODUCT_LIST;
-    const kwMap = isHoho ? hohoKeywordMap : keywordMap;
-    const brandRowName = isHoho ? '호호에미' : '닥터아돌';
+    const brandCfg = BRAND_CONFIG[brand as Brand];
+    if (!brandCfg) return NextResponse.json({ error: '알 수 없는 브랜드입니다.' }, { status: 400 });
+
+    const codePrefix = brandCfg.codePrefix;
+    const brandRowName = brandCfg.label;
+    const productList = BRAND_PRODUCT_LISTS[brand as Brand] ?? [];
+    const kwMap = getKwMap(brand as Brand);
+    const codeMap = getCodeMap(brand as Brand);
 
     const parsedToday = parseSheetText(todayText, codePrefix);
     const parsedPrev = parseSheetText(prevText, codePrefix);
@@ -34,7 +53,7 @@ export async function POST(req: NextRequest) {
 
     let codeToReport = new Map<string, string | null>();
 
-    if (process.env.ANTHROPIC_API_KEY) {
+    if (process.env.ANTHROPIC_API_KEY && productList.length > 0) {
       try {
         const client = new Anthropic();
         const productListStr = productList.map((p) => p.name).join(', ');
@@ -59,8 +78,7 @@ export async function POST(req: NextRequest) {
 
     for (const p of parsedToday.products) {
       if (!codeToReport.has(p.code)) {
-        const byCode = isHoho ? (HOHOEMI_CODE_MAP[p.code] ?? null) : null;
-        codeToReport.set(p.code, byCode ?? kwMap(p.name));
+        codeToReport.set(p.code, codeMap[p.code] ?? kwMap(p.name));
       }
     }
 
@@ -76,24 +94,25 @@ export async function POST(req: NextRequest) {
     const prevQtyMap = new Map<string, number>();
     let brandTotalPrev = 0;
     for (const p of parsedPrev.products) {
-      const byCode = isHoho ? (HOHOEMI_CODE_MAP[p.code] ?? null) : null;
-      const reportName = byCode ?? kwMap(p.name);
+      const reportName = codeMap[p.code] ?? kwMap(p.name);
       const qty = prevLabel ? (p.quantities[prevLabel] ?? 0) : 0;
       if (reportName) prevQtyMap.set(reportName, (prevQtyMap.get(reportName) ?? 0) + qty);
       else brandTotalPrev += qty;
     }
 
+    const blankOnEqual = brand === 'bancor' || brand === 'odroy';
+
     const rows: ReportRow[] = productList.map((item) => {
       const t = todayQtyMap.get(item.name) ?? 0;
       const p = prevQtyMap.get(item.name) ?? 0;
-      return { grade: item.grade, name: item.name, isSpecial: false, todayQty: t, prevQty: p, changeSymbol: symbol(t, p) };
+      return { grade: item.grade, name: item.name, isSpecial: false, todayQty: t, prevQty: p, changeSymbol: symbol(t, p, blankOnEqual) };
     });
 
-    rows.push({ grade: null, name: brandRowName, isSpecial: true, todayQty: brandTotal, prevQty: brandTotalPrev, changeSymbol: symbol(brandTotal, brandTotalPrev) });
+    rows.push({ grade: null, name: brandRowName, isSpecial: true, todayQty: brandTotal, prevQty: brandTotalPrev, changeSymbol: symbol(brandTotal, brandTotalPrev, blankOnEqual) });
 
     const totalToday = rows.filter((r) => !r.isSpecial).reduce((s, r) => s + r.todayQty, 0);
     const totalPrev = rows.filter((r) => !r.isSpecial).reduce((s, r) => s + r.prevQty, 0);
-    rows.push({ grade: null, name: '합계', isSpecial: true, todayQty: totalToday, prevQty: totalPrev, changeSymbol: symbol(totalToday, totalPrev) });
+    rows.push({ grade: null, name: '합계', isSpecial: true, todayQty: totalToday, prevQty: totalPrev, changeSymbol: symbol(totalToday, totalPrev, blankOnEqual) });
 
     const grandTotalToday = totalToday + brandTotal;
     const grandTotalPrev = totalPrev + brandTotalPrev;
