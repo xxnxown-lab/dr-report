@@ -2,8 +2,9 @@
 
 import { useState, useCallback } from 'react';
 import type { Brand } from '@/lib/constants';
+import { BRAND_CONFIG, BRAND_ORDER } from '@/lib/constants';
 import type { ReportRow } from '@/lib/types';
-import { downloadExcel } from '@/lib/excel';
+import { downloadExcel, downloadOliveyoungExcel } from '@/lib/excel';
 
 function fmt(n: number): string {
   return n.toLocaleString('ko-KR');
@@ -22,6 +23,13 @@ function toMMDD(dateStr: string): string {
   return `${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`;
 }
 
+function toMD(dateStr: string): string {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  const days = ['일', '월', '화', '수', '목', '금', '토'];
+  return `${d.getMonth() + 1}/${d.getDate()}(${days[d.getDay()]})`;
+}
+
 async function fetchTabText(url: string): Promise<string> {
   const res = await fetch(`/api/sheets?url=${encodeURIComponent(url)}`);
   const data = await res.json();
@@ -29,17 +37,20 @@ async function fetchTabText(url: string): Promise<string> {
   return data.text;
 }
 
-const BRAND_LABELS: Record<Brand, string> = { dr: '닥터아돌', hoho: '호호에미' };
 
 export default function Home() {
   const [brand, setBrand] = useState<Brand>('dr');
-  const [inputMode, setInputMode] = useState<'url' | 'paste'>('url');
-
   const [todayUrl, setTodayUrl] = useState('');
   const [prevUrl, setPrevUrl] = useState('');
-  const [pasteText, setPasteText] = useState('');
   const [todayDate, setTodayDate] = useState('');
   const [prevDate, setPrevDate] = useState('');
+  const [oyBrand, setOyBrand] = useState<Brand>('chungmijung');
+  const [oyUrl, setOyUrl] = useState('');
+  const [oyPrevUrl, setOyPrevUrl] = useState('');
+  const [oyRows, setOyRows] = useState<Array<{ name: string; todayQty: number; prevQty: number }>>([]);
+  const [oyTodayTotal, setOyTodayTotal] = useState(0);
+  const [oyPrevTotal, setOyPrevTotal] = useState(0);
+  const [oyCopied, setOyCopied] = useState(false);
 
   const [reportRows, setReportRows] = useState<ReportRow[]>([]);
   const [reportDate, setReportDate] = useState('');
@@ -53,28 +64,24 @@ export default function Home() {
 
   const handleBrandChange = useCallback((b: Brand) => {
     setBrand(b);
-    setReportRows([]);
+    if (b === 'oliveyoung') {
+      setReportRows([]);
+    } else {
+      setOyRows([]);
+    }
     setError('');
   }, []);
 
   const handleGenerate = useCallback(async () => {
-    if (inputMode === 'url' && (!todayUrl.trim() || !prevUrl.trim())) {
-      setError('당일 탭 URL과 비교일 탭 URL을 모두 입력해주세요.'); return;
-    }
-    if (inputMode === 'paste' && !pasteText.trim()) {
-      setError('데이터를 붙여넣어주세요.'); return;
+    if (!todayUrl.trim() || !prevUrl.trim()) {
+      setError('당일 URL과 비교일 URL을 모두 입력해주세요.'); return;
     }
     if (!todayDate || !prevDate) { setError('날짜를 모두 선택해주세요.'); return; }
 
     setLoading(true);
     setError('');
     try {
-      let tText = pasteText;
-      let pText = pasteText;
-
-      if (inputMode === 'url') {
-        [tText, pText] = await Promise.all([fetchTabText(todayUrl), fetchTabText(prevUrl)]);
-      }
+      const [tText, pText] = await Promise.all([fetchTabText(todayUrl), fetchTabText(prevUrl)]);
 
       const res = await fetch('/api/parse', {
         method: 'POST',
@@ -94,7 +101,7 @@ export default function Home() {
     } finally {
       setLoading(false);
     }
-  }, [brand, inputMode, todayUrl, prevUrl, pasteText, todayDate, prevDate]);
+  }, [brand, todayUrl, prevUrl, todayDate, prevDate]);
 
   const handleCopy = useCallback(async () => {
     if (!reportRows.length) return;
@@ -108,16 +115,58 @@ export default function Home() {
     setTimeout(() => setCopied(false), 2000);
   }, [reportRows, prevLabel, todayLabel]);
 
+  const handleOyGenerate = useCallback(async () => {
+    if (!oyUrl.trim()) { setError('올리브영 판매수량 URL을 입력해주세요.'); return; }
+    if (!oyPrevUrl.trim()) { setError('비교일 URL을 입력해주세요.'); return; }
+    if (!todayDate || !prevDate) { setError('날짜를 모두 선택해주세요.'); return; }
+
+    setLoading(true);
+    setError('');
+    try {
+      const [tText, pText] = await Promise.all([fetchTabText(oyUrl), fetchTabText(oyPrevUrl)]);
+      const res = await fetch('/api/parse-oliveyoung', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ todayText: tText, prevText: pText, todayDate, prevDate, oyBrand }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setOyRows(data.products);
+      setOyTodayTotal(data.todayTotal);
+      setOyPrevTotal(data.prevTotal);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : '오류가 발생했습니다.');
+    } finally {
+      setLoading(false);
+    }
+  }, [oyUrl, oyPrevUrl, todayDate, prevDate, oyBrand]);
+
+  const handleOyDownload = useCallback(async () => {
+    if (!oyRows.length) return;
+    const brandLabel = BRAND_CONFIG[oyBrand].label;
+    await downloadOliveyoungExcel(oyRows, toMD(prevDate), toMD(todayDate), brandLabel, oyPrevTotal, oyTodayTotal);
+  }, [oyRows, oyBrand, prevDate, todayDate, oyPrevTotal, oyTodayTotal]);
+
+  const handleOyCopy = useCallback(async () => {
+    if (!oyRows.length) return;
+    const header = `${toMD(prevDate)} • ${toMD(todayDate)} 올영판매량`;
+    const total = `합계 ${oyPrevTotal} / ${oyTodayTotal}`;
+    const lines = oyRows.map((p) => `${p.name} ${p.prevQty} / ${p.todayQty}`);
+    await navigator.clipboard.writeText([header, total, ...lines].join('\n'));
+    setOyCopied(true);
+    setTimeout(() => setOyCopied(false), 2000);
+  }, [oyRows, oyTodayTotal, oyPrevTotal, todayDate, prevDate]);
+
   const handleDownload = useCallback(() => {
     if (!reportRows.length) return;
-    downloadExcel(reportRows, reportDate, prevLabel, todayLabel, BRAND_LABELS[brand]);
+    downloadExcel(reportRows, reportDate, prevLabel, todayLabel, BRAND_CONFIG[brand].label, grandTotalPrev, grandTotalToday);
   }, [reportRows, reportDate, prevLabel, todayLabel, brand]);
 
   const gradeSpans: Record<string, number> = {};
   const gradeSeen = new Set<string>();
   reportRows.forEach((r) => { if (r.grade) gradeSpans[r.grade] = (gradeSpans[r.grade] || 0) + 1; });
 
-  const brandLabel = BRAND_LABELS[brand];
+  const brandLabel = BRAND_CONFIG[brand].label;
 
   return (
     <div className="min-h-screen bg-gray-50 p-4">
@@ -126,62 +175,78 @@ export default function Home() {
       </h1>
 
       {/* 브랜드 탭 */}
-      <div className="flex gap-2 mb-4">
-        {(['dr', 'hoho'] as Brand[]).map((b) => (
-          <button key={b} onClick={() => handleBrandChange(b)}
-            className={`px-5 py-2 rounded-lg font-semibold text-sm transition-colors ${
-              brand === b
-                ? b === 'dr' ? 'bg-blue-700 text-white shadow' : 'bg-red-600 text-white shadow'
-                : 'bg-white text-gray-600 border border-gray-300 hover:bg-gray-50'
-            }`}>
-            {BRAND_LABELS[b]}
-          </button>
-        ))}
+      <div className="flex flex-wrap gap-2 mb-4">
+        {BRAND_ORDER.map((b) => {
+          const cfg = BRAND_CONFIG[b];
+          const isActive = brand === b;
+          const isOliveYoung = b === 'oliveyoung';
+          return (
+            <button key={b} onClick={() => handleBrandChange(b)}
+              className={`px-5 py-2 rounded-lg font-semibold text-sm transition-colors ${
+                isActive
+                  ? cfg.activeClass
+                  : isOliveYoung
+                    ? 'bg-green-500 text-white hover:bg-green-600'
+                    : 'bg-white text-gray-600 border border-gray-300 hover:bg-gray-50'
+              }`}>
+              {cfg.label}
+            </button>
+          );
+        })}
       </div>
 
       <div className="bg-white rounded-lg shadow p-4 mb-4 max-w-3xl">
-        {/* 입력 모드 탭 */}
-        <div className="flex gap-2 mb-4">
-          <button onClick={() => setInputMode('url')}
-            className={`px-4 py-1.5 rounded text-sm font-medium ${inputMode === 'url' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'}`}>
-            구글 시트 URL
-          </button>
-          <button onClick={() => setInputMode('paste')}
-            className={`px-4 py-1.5 rounded text-sm font-medium ${inputMode === 'paste' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'}`}>
-            텍스트 붙여넣기
-          </button>
+        <div className="space-y-3">
+          {brand === 'oliveyoung' ? (
+            <>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">브랜드 선택</label>
+                <select className="w-full border rounded p-2 text-sm"
+                  value={oyBrand} onChange={(e) => setOyBrand(e.target.value as Brand)}>
+                  <option value="chungmijung">청미정</option>
+                  <option value="bioga">바이오가</option>
+                  <option value="dr">닥터아돌</option>
+                  <option value="hoho">호호에미</option>
+                  <option value="bancor">반코르</option>
+                  <option value="odroy">오드로이</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">브랜드별 올리브영 판매수량 URL</label>
+                <input className="w-full border rounded p-2 text-sm"
+                  placeholder="https://docs.google.com/spreadsheets/d/...#gid=0"
+                  value={oyUrl} onChange={(e) => setOyUrl(e.target.value)} />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">
+                  비교일 탭 URL <span className="text-gray-400">(비교할 달 탭 열고 주소창 URL 복사)</span>
+                </label>
+                <input className="w-full border rounded p-2 text-sm"
+                  placeholder="https://docs.google.com/spreadsheets/d/...#gid=1234"
+                  value={oyPrevUrl} onChange={(e) => setOyPrevUrl(e.target.value)} />
+              </div>
+            </>
+          ) : (
+            <>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">
+                  국내 제품별 오전 판매수량 URL <span className="text-gray-400">(해당 탭 열고 주소창 URL 복사)</span>
+                </label>
+                <input className="w-full border rounded p-2 text-sm"
+                  placeholder="https://docs.google.com/spreadsheets/d/...#gid=0"
+                  value={todayUrl} onChange={(e) => setTodayUrl(e.target.value)} />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">
+                  비교일 탭 URL <span className="text-gray-400">(비교할 달 탭 열고 주소창 URL 복사)</span>
+                </label>
+                <input className="w-full border rounded p-2 text-sm"
+                  placeholder="https://docs.google.com/spreadsheets/d/...#gid=1234"
+                  value={prevUrl} onChange={(e) => setPrevUrl(e.target.value)} />
+              </div>
+            </>
+          )}
         </div>
-
-        {inputMode === 'url' ? (
-          <div className="space-y-3">
-            <div>
-              <label className="block text-xs text-gray-500 mb-1">
-                당일 탭 URL <span className="text-gray-400">(해당 탭 열고 주소창 URL 복사)</span>
-              </label>
-              <input className="w-full border rounded p-2 text-sm"
-                placeholder="https://docs.google.com/spreadsheets/d/...#gid=0"
-                value={todayUrl} onChange={(e) => setTodayUrl(e.target.value)} />
-            </div>
-            <div>
-              <label className="block text-xs text-gray-500 mb-1">
-                비교일 탭 URL <span className="text-gray-400">(비교할 달 탭 열고 주소창 URL 복사)</span>
-              </label>
-              <input className="w-full border rounded p-2 text-sm"
-                placeholder="https://docs.google.com/spreadsheets/d/...#gid=1234"
-                value={prevUrl} onChange={(e) => setPrevUrl(e.target.value)} />
-            </div>
-          </div>
-        ) : (
-          <div>
-            <label className="block text-xs text-gray-500 mb-1">
-              스프레드시트 데이터 붙여넣기
-              <span className="text-gray-400 ml-1">(당일·비교일이 같은 시트에 있으면 한 번에 처리)</span>
-            </label>
-            <textarea className="w-full h-32 border rounded p-2 text-xs font-mono resize-y"
-              placeholder="구글 시트에서 전체 선택(Ctrl+A) → 복사(Ctrl+C) 후 붙여넣기"
-              value={pasteText} onChange={(e) => setPasteText(e.target.value)} />
-          </div>
-        )}
 
         <div className="flex flex-wrap gap-4 mt-4 items-center">
           <label className="flex items-center gap-2 text-sm">
@@ -194,7 +259,7 @@ export default function Home() {
             <input type="date" className="border rounded px-2 py-1 text-sm"
               value={prevDate} onChange={(e) => setPrevDate(e.target.value)} />
           </label>
-          <button onClick={handleGenerate} disabled={loading}
+          <button onClick={brand === 'oliveyoung' ? handleOyGenerate : handleGenerate} disabled={loading}
             className="px-6 py-1.5 bg-blue-700 text-white rounded font-medium text-sm disabled:opacity-50">
             {loading ? '생성 중...' : '보고서 생성'}
           </button>
@@ -203,8 +268,27 @@ export default function Home() {
         {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
       </div>
 
+      {/* 올리브영 보고서 */}
+      {brand === 'oliveyoung' && oyRows.length > 0 && (
+        <div className="bg-white rounded-lg shadow max-w-3xl">
+          <div className="flex gap-2 p-3 border-b">
+            <button onClick={handleOyCopy}
+              className="px-4 py-1.5 bg-green-600 text-white rounded text-sm font-medium">
+              {oyCopied ? '복사됨!' : '클립보드 복사'}
+            </button>
+            <button onClick={handleOyDownload}
+              className="px-4 py-1.5 bg-orange-600 text-white rounded text-sm font-medium">
+              엑셀 다운로드 (.xlsx)
+            </button>
+          </div>
+          <pre className="p-4 text-sm whitespace-pre-wrap font-mono leading-relaxed">
+            {`${toMD(prevDate)} • ${toMD(todayDate)} 올영판매량\n합계 ${oyPrevTotal} / ${oyTodayTotal}\n${oyRows.map((p) => `${p.name} ${p.prevQty} / ${p.todayQty}`).join('\n')}`}
+          </pre>
+        </div>
+      )}
+
       {/* 보고서 테이블 */}
-      {reportRows.length > 0 && (
+      {brand !== 'oliveyoung' && reportRows.length > 0 && (
         <div className="bg-white rounded-lg shadow">
           <div className="flex gap-2 p-3 border-b">
             <button onClick={handleCopy}

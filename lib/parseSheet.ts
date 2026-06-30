@@ -99,6 +99,66 @@ export function matchDayToLabel(dateLabels: string[], dateStr: string): string |
   });
 }
 
+export interface OliveyoungParsed {
+  productNames: string[];
+  getQtyForDate: (dateStr: string) => number[];
+}
+
+export function parseOliveyoungSheet(text: string): OliveyoungParsed {
+  const rows = text.split('\n').map((line) => line.split('\t'));
+
+  let headerRowIdx = -1;
+  let channelColIdx = -1;
+  for (let i = 0; i < rows.length; i++) {
+    const idx = rows[i].findIndex((c) => c.trim() === '채널');
+    if (idx !== -1) { headerRowIdx = i; channelColIdx = idx; break; }
+  }
+  if (headerRowIdx === -1) return { productNames: [], getQtyForDate: () => [] };
+
+  const headerRow = rows[headerRowIdx];
+  const productNames: string[] = [];
+  for (let i = channelColIdx + 1; i < headerRow.length; i++) {
+    const name = headerRow[i].trim();
+    if (name) productNames.push(name);
+  }
+
+  const productCount = productNames.length;
+  const productColStart = channelColIdx + 1;
+  const dateColIdx = channelColIdx - 1;
+
+  const getQtyForDate = (dateStr: string): number[] => {
+    if (!dateStr || productCount === 0) return new Array(productCount).fill(0);
+    const d = new Date(dateStr);
+    const month = d.getMonth() + 1;
+    const day = d.getDate();
+    const targetPattern = new RegExp(`0?${month}월\\s*0?${day}일`);
+    const totals = new Array(productCount).fill(0);
+    let inTarget = false;
+
+    for (let i = headerRowIdx + 1; i < rows.length; i++) {
+      const row = rows[i];
+      const dateCell = (row[dateColIdx] || '').trim();
+      const channelCell = (row[channelColIdx] || '').trim();
+
+      if (dateCell) {
+        if (targetPattern.test(dateCell)) { inTarget = true; }
+        else if (inTarget) { break; }
+      }
+
+      if (inTarget && ['온라인', '오프라인', '글로벌'].includes(channelCell)) {
+        for (let j = 0; j < productCount; j++) {
+          const raw = (row[productColStart + j] || '').replace(/,/g, '').trim();
+          const val = parseInt(raw, 10);
+          if (!isNaN(val)) totals[j] += val;
+        }
+      }
+    }
+    return totals;
+  };
+
+  return { productNames, getQtyForDate };
+}
+
 export function keywordMap(productName: string): string | null {
   const n = productName.toLowerCase();
   if (n.includes('히알바이오틱스')) return '히알바이오틱스';
