@@ -5,6 +5,7 @@ import type { Brand } from '@/lib/constants';
 import { BRAND_CONFIG, BRAND_ORDER } from '@/lib/constants';
 import type { ReportRow } from '@/lib/types';
 import { downloadExcel, downloadOliveyoungExcel } from '@/lib/excel';
+import DateRangePicker from './DateRangePicker';
 
 function fmt(n: number): string {
   return n.toLocaleString('ko-KR');
@@ -30,6 +31,11 @@ function toMD(dateStr: string): string {
   return `${d.getMonth() + 1}/${d.getDate()}(${days[d.getDay()]})`;
 }
 
+function toMDRange(from: string, to: string): string {
+  if (!to || to === from) return toMD(from);
+  return `${toMD(from)}~${toMD(to)}`;
+}
+
 async function fetchTabText(url: string): Promise<string> {
   const res = await fetch(`/api/sheets?url=${encodeURIComponent(url)}`);
   const data = await res.json();
@@ -47,6 +53,8 @@ export default function Home() {
   const [oyBrand, setOyBrand] = useState<Brand>('chungmijung');
   const [oyUrl, setOyUrl] = useState('');
   const [oyPrevUrl, setOyPrevUrl] = useState('');
+  const [oyToday, setOyToday] = useState({ from: '', to: '' });
+  const [oyPrev, setOyPrev] = useState({ from: '', to: '' });
   const [oyRows, setOyRows] = useState<Array<{ name: string; todayQty: number; prevQty: number }>>([]);
   const [oyTodayTotal, setOyTodayTotal] = useState(0);
   const [oyPrevTotal, setOyPrevTotal] = useState(0);
@@ -118,7 +126,7 @@ export default function Home() {
   const handleOyGenerate = useCallback(async () => {
     if (!oyUrl.trim()) { setError('올리브영 판매수량 URL을 입력해주세요.'); return; }
     if (!oyPrevUrl.trim()) { setError('비교일 URL을 입력해주세요.'); return; }
-    if (!todayDate || !prevDate) { setError('날짜를 모두 선택해주세요.'); return; }
+    if (!oyToday.from || !oyPrev.from) { setError('날짜를 모두 선택해주세요.'); return; }
 
     setLoading(true);
     setError('');
@@ -127,7 +135,12 @@ export default function Home() {
       const res = await fetch('/api/parse-oliveyoung', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ todayText: tText, prevText: pText, todayDate, prevDate, oyBrand }),
+        body: JSON.stringify({
+          todayText: tText, prevText: pText,
+          todayDate: oyToday.from, todayDateEnd: oyToday.to || undefined,
+          prevDate: oyPrev.from, prevDateEnd: oyPrev.to || undefined,
+          oyBrand,
+        }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
@@ -139,23 +152,23 @@ export default function Home() {
     } finally {
       setLoading(false);
     }
-  }, [oyUrl, oyPrevUrl, todayDate, prevDate, oyBrand]);
+  }, [oyUrl, oyPrevUrl, oyToday, oyPrev, oyBrand]);
 
   const handleOyDownload = useCallback(async () => {
     if (!oyRows.length) return;
     const brandLabel = BRAND_CONFIG[oyBrand].label;
-    await downloadOliveyoungExcel(oyRows, toMD(prevDate), toMD(todayDate), brandLabel, oyPrevTotal, oyTodayTotal);
-  }, [oyRows, oyBrand, prevDate, todayDate, oyPrevTotal, oyTodayTotal]);
+    await downloadOliveyoungExcel(oyRows, toMDRange(oyPrev.from, oyPrev.to), toMDRange(oyToday.from, oyToday.to), brandLabel, oyPrevTotal, oyTodayTotal);
+  }, [oyRows, oyBrand, oyPrev, oyToday, oyPrevTotal, oyTodayTotal]);
 
   const handleOyCopy = useCallback(async () => {
     if (!oyRows.length) return;
-    const header = `${toMD(prevDate)} • ${toMD(todayDate)} 올영판매량`;
+    const header = `${toMDRange(oyPrev.from, oyPrev.to)} • ${toMDRange(oyToday.from, oyToday.to)} 올영판매량`;
     const total = `합계 ${oyPrevTotal} / ${oyTodayTotal}`;
     const lines = oyRows.map((p) => `${p.name} ${p.prevQty} / ${p.todayQty}`);
     await navigator.clipboard.writeText([header, total, ...lines].join('\n'));
     setOyCopied(true);
     setTimeout(() => setOyCopied(false), 2000);
-  }, [oyRows, oyTodayTotal, oyPrevTotal, todayDate, prevDate]);
+  }, [oyRows, oyTodayTotal, oyPrevTotal, oyToday, oyPrev]);
 
   const handleDownload = useCallback(() => {
     if (!reportRows.length) return;
@@ -248,22 +261,39 @@ export default function Home() {
           )}
         </div>
 
-        <div className="flex flex-wrap gap-4 mt-4 items-center">
-          <label className="flex items-center gap-2 text-sm">
-            <span className="text-gray-600 whitespace-nowrap">당일 날짜:</span>
-            <input type="date" className="border rounded px-2 py-1 text-sm"
-              value={todayDate} onChange={(e) => setTodayDate(e.target.value)} />
-          </label>
-          <label className="flex items-center gap-2 text-sm">
-            <span className="text-gray-600 whitespace-nowrap">비교 날짜:</span>
-            <input type="date" className="border rounded px-2 py-1 text-sm"
-              value={prevDate} onChange={(e) => setPrevDate(e.target.value)} />
-          </label>
-          <button onClick={brand === 'oliveyoung' ? handleOyGenerate : handleGenerate} disabled={loading}
-            className="px-6 py-1.5 bg-blue-700 text-white rounded font-medium text-sm disabled:opacity-50">
-            {loading ? '생성 중...' : '보고서 생성'}
-          </button>
-        </div>
+        {brand === 'oliveyoung' ? (
+          <div className="flex flex-wrap gap-4 mt-4 items-center">
+            <div className="flex items-center gap-2 text-sm">
+              <span className="text-gray-600 whitespace-nowrap">당일 날짜:</span>
+              <DateRangePicker value={oyToday} onChange={setOyToday} />
+            </div>
+            <div className="flex items-center gap-2 text-sm">
+              <span className="text-gray-600 whitespace-nowrap">비교 날짜:</span>
+              <DateRangePicker value={oyPrev} onChange={setOyPrev} />
+            </div>
+            <button onClick={handleOyGenerate} disabled={loading}
+              className="px-6 py-1.5 bg-blue-700 text-white rounded font-medium text-sm disabled:opacity-50">
+              {loading ? '생성 중...' : '보고서 생성'}
+            </button>
+          </div>
+        ) : (
+          <div className="flex flex-wrap gap-4 mt-4 items-center">
+            <label className="flex items-center gap-2 text-sm">
+              <span className="text-gray-600 whitespace-nowrap">당일 날짜:</span>
+              <input type="date" className="border rounded px-2 py-1 text-sm"
+                value={todayDate} onChange={(e) => setTodayDate(e.target.value)} />
+            </label>
+            <label className="flex items-center gap-2 text-sm">
+              <span className="text-gray-600 whitespace-nowrap">비교 날짜:</span>
+              <input type="date" className="border rounded px-2 py-1 text-sm"
+                value={prevDate} onChange={(e) => setPrevDate(e.target.value)} />
+            </label>
+            <button onClick={handleGenerate} disabled={loading}
+              className="px-6 py-1.5 bg-blue-700 text-white rounded font-medium text-sm disabled:opacity-50">
+              {loading ? '생성 중...' : '보고서 생성'}
+            </button>
+          </div>
+        )}
 
         {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
       </div>
@@ -282,7 +312,7 @@ export default function Home() {
             </button>
           </div>
           <pre className="p-4 text-sm whitespace-pre-wrap font-mono leading-relaxed">
-            {`${toMD(prevDate)} • ${toMD(todayDate)} 올영판매량\n합계 ${oyPrevTotal} / ${oyTodayTotal}\n${oyRows.map((p) => `${p.name} ${p.prevQty} / ${p.todayQty}`).join('\n')}`}
+            {`${toMDRange(oyPrev.from, oyPrev.to)} • ${toMDRange(oyToday.from, oyToday.to)} 올영판매량\n합계 ${oyPrevTotal} / ${oyTodayTotal}\n${oyRows.map((p) => `${p.name} ${p.prevQty} / ${p.todayQty}`).join('\n')}`}
           </pre>
         </div>
       )}

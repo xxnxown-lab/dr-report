@@ -102,6 +102,7 @@ export function matchDayToLabel(dateLabels: string[], dateStr: string): string |
 export interface OliveyoungParsed {
   productNames: string[];
   getQtyForDate: (dateStr: string) => number[];
+  getQtyForDateRange: (fromDate: string, toDate?: string) => number[];
 }
 
 export function parseOliveyoungSheet(text: string): OliveyoungParsed {
@@ -113,7 +114,7 @@ export function parseOliveyoungSheet(text: string): OliveyoungParsed {
     const idx = rows[i].findIndex((c) => c.trim() === '채널');
     if (idx !== -1) { headerRowIdx = i; channelColIdx = idx; break; }
   }
-  if (headerRowIdx === -1) return { productNames: [], getQtyForDate: () => [] };
+  if (headerRowIdx === -1) return { productNames: [], getQtyForDate: () => [], getQtyForDateRange: () => [] };
 
   const headerRow = rows[headerRowIdx];
   const productNames: string[] = [];
@@ -156,7 +157,21 @@ export function parseOliveyoungSheet(text: string): OliveyoungParsed {
     return totals;
   };
 
-  return { productNames, getQtyForDate };
+  const getQtyForDateRange = (fromDate: string, toDate?: string): number[] => {
+    if (!toDate || toDate === fromDate) return getQtyForDate(fromDate);
+    const from = new Date(fromDate);
+    const to = new Date(toDate);
+    const totals = new Array(productCount).fill(0);
+    const curr = new Date(from);
+    while (curr <= to) {
+      const dateStr = curr.toISOString().split('T')[0];
+      getQtyForDate(dateStr).forEach((qty, i) => { totals[i] += qty; });
+      curr.setDate(curr.getDate() + 1);
+    }
+    return totals;
+  };
+
+  return { productNames, getQtyForDate, getQtyForDateRange };
 }
 
 export function keywordMap(productName: string): string | null {

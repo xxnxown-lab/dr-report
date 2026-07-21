@@ -4,7 +4,7 @@ import { parseOliveyoungSheet } from '@/lib/parseSheet';
 
 export async function POST(req: NextRequest) {
   try {
-    const { todayText, prevText, todayDate, prevDate, oyBrand } = await req.json();
+    const { todayText, prevText, todayDate, todayDateEnd, prevDate, prevDateEnd, oyBrand } = await req.json();
 
     if (!todayText?.trim()) return NextResponse.json({ error: '당일 데이터를 입력해주세요.' }, { status: 400 });
     if (!prevText?.trim()) return NextResponse.json({ error: '비교일 데이터를 입력해주세요.' }, { status: 400 });
@@ -15,8 +15,8 @@ export async function POST(req: NextRequest) {
     if (todayParsed.productNames.length === 0)
       return NextResponse.json({ error: '시트에서 제품 정보를 찾을 수 없습니다. 시트 형식을 확인해주세요.' }, { status: 400 });
 
-    const todayQtys = todayParsed.getQtyForDate(todayDate);
-    const prevQtys = prevParsed.getQtyForDate(prevDate);
+    const todayQtys = todayParsed.getQtyForDateRange(todayDate, todayDateEnd || undefined);
+    const prevQtys = prevParsed.getQtyForDateRange(prevDate, prevDateEnd || undefined);
 
     const productDefs = OLIVEYOUNG_BRAND_PRODUCTS[oyBrand];
 
