@@ -202,13 +202,8 @@ export const CHUNGMIJUNG_PRODUCT_LIST = [
   { grade: 'B' as const, name: '선인장앰플' },
   { grade: 'C' as const, name: '톤업선크림' },
   { grade: 'C' as const, name: '흑곡트리트먼트' },
-  { grade: 'C' as const, name: '커스랩' },
   { grade: 'C' as const, name: '다시마 토너패드' },
   { grade: 'C' as const, name: '잡티앰플' },
-  { grade: 'C' as const, name: '잡티커버세럼' },
-  { grade: 'C' as const, name: '미백에센스' },
-  { grade: 'C' as const, name: '바디워시' },
-  { grade: 'C' as const, name: '시카토너' },
   { grade: 'C' as const, name: '알로에 토너' },
 ];
 
@@ -225,13 +220,8 @@ export const CHUNGMIJUNG_CODE_MAP: Record<string, string> = {
   'Ch-033': '선인장앰플',
   'Ch-046': '톤업선크림',
   'Ch-002': '흑곡트리트먼트',
-  'Ch-037': '커스랩',
   'Ch-043': '다시마 토너패드',
   'Ch-048': '잡티앰플',
-  'Ch-050': '잡티커버세럼',
-  'Ch-049': '미백에센스',
-  'Ch-020': '바디워시',
-  'Ch-041': '시카토너',
   'Ch-051': '알로에 토너',
 };
 
