@@ -2,9 +2,9 @@
 
 import { useState, useCallback } from 'react';
 import type { Brand } from '@/lib/constants';
-import { BRAND_CONFIG, BRAND_ORDER } from '@/lib/constants';
-import type { ReportRow } from '@/lib/types';
-import { downloadExcel, downloadOliveyoungExcel } from '@/lib/excel';
+import { BRAND_CONFIG, BRAND_ORDER, ROAS_BRAND_ORDER } from '@/lib/constants';
+import type { ReportRow, RoasRow } from '@/lib/types';
+import { downloadExcel, downloadOliveyoungExcel, downloadRoasExcel } from '@/lib/excel';
 import DateRangePicker from './DateRangePicker';
 
 function fmt(n: number): string {
@@ -60,6 +60,14 @@ export default function Home() {
   const [oyPrevTotal, setOyPrevTotal] = useState(0);
   const [oyCopied, setOyCopied] = useState(false);
 
+  const [roasBrand, setRoasBrand] = useState<Brand>('dr');
+  const [roasUrl, setRoasUrl] = useState('');
+  const [roasRows, setRoasRows] = useState<RoasRow[]>([]);
+  const [roasTotalAdSpend, setRoasTotalAdSpend] = useState(0);
+  const [roasTotalRevenue, setRoasTotalRevenue] = useState(0);
+  const [roasTotalRoas, setRoasTotalRoas] = useState(0);
+  const [roasCopied, setRoasCopied] = useState(false);
+
   const [reportRows, setReportRows] = useState<ReportRow[]>([]);
   const [reportDate, setReportDate] = useState('');
   const [prevLabel, setPrevLabel] = useState('');
@@ -72,11 +80,9 @@ export default function Home() {
 
   const handleBrandChange = useCallback((b: Brand) => {
     setBrand(b);
-    if (b === 'oliveyoung') {
-      setReportRows([]);
-    } else {
-      setOyRows([]);
-    }
+    if (b !== 'oliveyoung') setOyRows([]);
+    if (b !== 'roas') setRoasRows([]);
+    if (b === 'oliveyoung' || b === 'roas') setReportRows([]);
     setError('');
   }, []);
 
@@ -170,6 +176,48 @@ export default function Home() {
     setTimeout(() => setOyCopied(false), 2000);
   }, [oyRows, oyTodayTotal, oyPrevTotal, oyToday, oyPrev]);
 
+  const handleRoasGenerate = useCallback(async () => {
+    if (!roasUrl.trim()) { setError('제품별 ROAS URL을 입력해주세요.'); return; }
+
+    setLoading(true);
+    setError('');
+    try {
+      const text = await fetchTabText(roasUrl);
+      const res = await fetch('/api/parse-roas', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text, brand: roasBrand }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setRoasRows(data.rows);
+      setRoasTotalAdSpend(data.totalAdSpend);
+      setRoasTotalRevenue(data.totalRevenue);
+      setRoasTotalRoas(data.totalRoas);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : '오류가 발생했습니다.');
+    } finally {
+      setLoading(false);
+    }
+  }, [roasUrl, roasBrand]);
+
+  const handleRoasCopy = useCallback(async () => {
+    if (!roasRows.length) return;
+    const header = ['등급', '제품', '광고비', 'ROAS', '매출'];
+    const dataRows = roasRows.filter((row) => row.grade).map((row) => [
+      row.grade ?? '', row.name,
+      row.adSpend || '', row.adSpend > 0 ? `${row.roas.toFixed(0)}%` : '-', row.revenue || '',
+    ]);
+    await navigator.clipboard.writeText([header, ...dataRows].map((r) => r.join('\t')).join('\n'));
+    setRoasCopied(true);
+    setTimeout(() => setRoasCopied(false), 2000);
+  }, [roasRows]);
+
+  const handleRoasDownload = useCallback(() => {
+    if (!roasRows.length) return;
+    downloadRoasExcel(roasRows.filter((r) => r.grade), BRAND_CONFIG[roasBrand].label, roasTotalAdSpend, roasTotalRevenue, roasTotalRoas);
+  }, [roasRows, roasBrand, roasTotalAdSpend, roasTotalRevenue, roasTotalRoas]);
+
   const handleDownload = useCallback(() => {
     if (!reportRows.length) return;
     downloadExcel(reportRows, reportDate, prevLabel, todayLabel, BRAND_CONFIG[brand].label, grandTotalPrev, grandTotalToday);
@@ -178,6 +226,10 @@ export default function Home() {
   const gradeSpans: Record<string, number> = {};
   const gradeSeen = new Set<string>();
   reportRows.forEach((r) => { if (r.grade) gradeSpans[r.grade] = (gradeSpans[r.grade] || 0) + 1; });
+
+  const roasGradeSpans: Record<string, number> = {};
+  const roasGradeSeen = new Set<string>();
+  roasRows.forEach((r) => { if (r.grade) roasGradeSpans[r.grade] = (roasGradeSpans[r.grade] || 0) + 1; });
 
   const brandLabel = BRAND_CONFIG[brand].label;
 
@@ -193,6 +245,7 @@ export default function Home() {
           const cfg = BRAND_CONFIG[b];
           const isActive = brand === b;
           const isOliveYoung = b === 'oliveyoung';
+          const isRoas = b === 'roas';
           return (
             <button key={b} onClick={() => handleBrandChange(b)}
               className={`px-5 py-2 rounded-lg font-semibold text-sm transition-colors ${
@@ -200,7 +253,9 @@ export default function Home() {
                   ? cfg.activeClass
                   : isOliveYoung
                     ? 'bg-green-500 text-white hover:bg-green-600'
-                    : 'bg-white text-gray-600 border border-gray-300 hover:bg-gray-50'
+                    : isRoas
+                      ? 'bg-indigo-500 text-white hover:bg-indigo-600'
+                      : 'bg-white text-gray-600 border border-gray-300 hover:bg-gray-50'
               }`}>
               {cfg.label}
             </button>
@@ -239,6 +294,24 @@ export default function Home() {
                   value={oyPrevUrl} onChange={(e) => setOyPrevUrl(e.target.value)} />
               </div>
             </>
+          ) : brand === 'roas' ? (
+            <>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">브랜드 선택</label>
+                <select className="w-full border rounded p-2 text-sm"
+                  value={roasBrand} onChange={(e) => setRoasBrand(e.target.value as Brand)}>
+                  {ROAS_BRAND_ORDER.map((b) => (
+                    <option key={b} value={b}>{BRAND_CONFIG[b].label}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">브랜드별 제품별 광고비 사용내역 URL</label>
+                <input className="w-full border rounded p-2 text-sm"
+                  placeholder="https://docs.google.com/spreadsheets/d/...#gid=0"
+                  value={roasUrl} onChange={(e) => setRoasUrl(e.target.value)} />
+              </div>
+            </>
           ) : (
             <>
               <div>
@@ -272,6 +345,13 @@ export default function Home() {
               <DateRangePicker value={oyPrev} onChange={setOyPrev} />
             </div>
             <button onClick={handleOyGenerate} disabled={loading}
+              className="px-6 py-1.5 bg-blue-700 text-white rounded font-medium text-sm disabled:opacity-50">
+              {loading ? '생성 중...' : '보고서 생성'}
+            </button>
+          </div>
+        ) : brand === 'roas' ? (
+          <div className="flex flex-wrap gap-4 mt-4 items-center">
+            <button onClick={handleRoasGenerate} disabled={loading}
               className="px-6 py-1.5 bg-blue-700 text-white rounded font-medium text-sm disabled:opacity-50">
               {loading ? '생성 중...' : '보고서 생성'}
             </button>
@@ -317,8 +397,72 @@ export default function Home() {
         </div>
       )}
 
+      {/* 제품별 ROAS 테이블 */}
+      {brand === 'roas' && roasRows.length > 0 && (
+        <div className="bg-white rounded-lg shadow">
+          <div className="flex gap-2 p-3 border-b">
+            <button onClick={handleRoasCopy}
+              className="px-4 py-1.5 bg-green-600 text-white rounded text-sm font-medium">
+              {roasCopied ? '복사됨!' : '클립보드 복사'}
+            </button>
+            <button onClick={handleRoasDownload}
+              className="px-4 py-1.5 bg-orange-600 text-white rounded text-sm font-medium">
+              엑셀 다운로드 (.xlsx)
+            </button>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="text-xs border-collapse">
+              <thead>
+                <tr className="bg-indigo-800 text-white">
+                  <th className="border border-indigo-700 px-2 py-1 whitespace-nowrap">등급</th>
+                  <th className="border border-indigo-700 px-2 py-1 whitespace-nowrap">제품</th>
+                  <th className="border border-indigo-700 px-2 py-1 whitespace-nowrap text-center">광고비</th>
+                  <th className="border border-indigo-700 px-2 py-1 whitespace-nowrap text-center">ROAS</th>
+                  <th className="border border-indigo-700 px-2 py-1 whitespace-nowrap text-center">매출</th>
+                </tr>
+              </thead>
+              <tbody>
+                {roasRows.filter((row) => row.grade).map((row, rowIdx) => {
+                  const isFirst = row.grade && !roasGradeSeen.has(row.grade);
+                  if (row.grade) roasGradeSeen.add(row.grade);
+                  return (
+                    <tr key={rowIdx} className="hover:bg-yellow-50">
+                      {isFirst && row.grade ? (
+                        <td className="border border-gray-300 px-2 py-0.5 text-center font-bold bg-indigo-50"
+                          rowSpan={roasGradeSpans[row.grade]}>{row.grade}</td>
+                      ) : null}
+                      <td className="border border-gray-300 px-2 py-0.5 whitespace-nowrap">{row.name}</td>
+                      <td className="border border-gray-300 px-2 py-0.5 text-right">
+                        {row.adSpend > 0 ? fmt(row.adSpend) : '-'}
+                      </td>
+                      <td className="border border-gray-300 px-2 py-0.5 text-right font-bold">
+                        {row.adSpend > 0 ? `${row.roas.toFixed(0)}%` : '-'}
+                      </td>
+                      <td className="border border-gray-300 px-2 py-0.5 text-right">
+                        {row.revenue > 0 ? fmt(row.revenue) : '-'}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="px-3 py-2 border-t text-sm text-gray-700">
+            <span className="font-semibold">{BRAND_CONFIG[roasBrand].label} 전체</span>
+            <span className="mx-3 text-gray-400">|</span>
+            <span>광고비: <strong>{fmt(roasTotalAdSpend)}원</strong></span>
+            <span className="mx-3 text-gray-400">|</span>
+            <span>ROAS: <strong>{roasTotalRoas.toFixed(0)}%</strong></span>
+            <span className="mx-3 text-gray-400">|</span>
+            <span>매출: <strong>{fmt(roasTotalRevenue)}원</strong></span>
+          </div>
+        </div>
+      )}
+
       {/* 보고서 테이블 */}
-      {brand !== 'oliveyoung' && reportRows.length > 0 && (
+      {brand !== 'oliveyoung' && brand !== 'roas' && reportRows.length > 0 && (
         <div className="bg-white rounded-lg shadow">
           <div className="flex gap-2 p-3 border-b">
             <button onClick={handleCopy}

@@ -21,3 +21,11 @@ export interface ParsedSheet {
   dateLabels: string[];
   products: SheetProduct[];
 }
+
+export interface RoasRow {
+  grade: Grade | null;
+  name: string;
+  adSpend: number;
+  revenue: number;
+  roas: number;
+}

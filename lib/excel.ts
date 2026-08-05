@@ -1,5 +1,5 @@
 import * as XLSX from 'xlsx';
-import type { ReportRow } from './types';
+import type { ReportRow, RoasRow } from './types';
 
 export function downloadExcel(
   rows: ReportRow[],
@@ -131,4 +131,60 @@ export async function downloadOliveyoungExcel(
   a.download = `올영판매량_${brandLabel}_${todayDateLabel}.xlsx`;
   a.click();
   URL.revokeObjectURL(url);
+}
+
+export function downloadRoasExcel(
+  rows: RoasRow[],
+  brandLabel: string,
+  totalAdSpend: number,
+  totalRevenue: number,
+  totalRoas: number,
+) {
+  const wb = XLSX.utils.book_new();
+
+  const headerRow1 = [`${brandLabel} 제품별 ROAS`, '', '', '', ''];
+  const headerRow2 = ['등급', '제품', '광고비', 'ROAS', '매출'];
+
+  const dataRows = rows.map((row) => [
+    row.grade ?? '',
+    row.name,
+    row.adSpend,
+    row.adSpend > 0 ? `${row.roas.toFixed(0)}%` : '-',
+    row.revenue,
+  ]);
+
+  const footerRows = [
+    ['', '', '', '', ''],
+    [
+      `${brandLabel} 전체 | 광고비: ${totalAdSpend.toLocaleString('ko-KR')}원 · ROAS: ${totalRoas.toFixed(0)}% · 매출: ${totalRevenue.toLocaleString('ko-KR')}원`,
+      '', '', '', '',
+    ],
+  ];
+
+  const wsData = [headerRow1, headerRow2, ...dataRows, ...footerRows];
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+  const totalRowIdx = 2 + dataRows.length + 1;
+  const merges: XLSX.Range[] = [
+    { s: { r: 0, c: 0 }, e: { r: 0, c: 4 } },
+    { s: { r: totalRowIdx, c: 0 }, e: { r: totalRowIdx, c: 4 } },
+  ];
+
+  const gradeGroups: Record<string, { start: number; end: number }> = {};
+  rows.forEach((row, idx) => {
+    const r = idx + 2;
+    const g = row.grade;
+    if (!g) return;
+    if (!gradeGroups[g]) gradeGroups[g] = { start: r, end: r };
+    else gradeGroups[g].end = r;
+  });
+  for (const g of Object.values(gradeGroups)) {
+    if (g.start < g.end) merges.push({ s: { r: g.start, c: 0 }, e: { r: g.end, c: 0 } });
+  }
+  ws['!merges'] = merges;
+
+  ws['!cols'] = [{ wch: 6 }, { wch: 20 }, { wch: 14 }, { wch: 8 }, { wch: 14 }];
+
+  XLSX.utils.book_append_sheet(wb, ws, `${brandLabel} ROAS`);
+  XLSX.writeFile(wb, `${brandLabel}_제품별ROAS.xlsx`);
 }

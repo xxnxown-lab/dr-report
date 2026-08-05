@@ -17,7 +17,6 @@ export const PRODUCT_LIST = [
   { grade: 'C' as const, name: '오메가3' },
   { grade: 'C' as const, name: '베타카로틴 오메가3' },
   { grade: 'C' as const, name: '철분' },
-  { grade: 'C' as const, name: '삭센닭' },
   { grade: 'C' as const, name: '크랜베리' },
   { grade: 'C' as const, name: '치약' },
   { grade: 'C' as const, name: '샴푸' },
@@ -86,7 +85,7 @@ export const OLIVEYOUNG_BRAND_PRODUCTS: Partial<Record<string, OliveyoungProduct
 };
 
 export type Grade = 'A' | 'B' | 'C';
-export type Brand = 'dr' | 'hoho' | 'chungmijung' | 'bioga' | 'bancor' | 'odroy' | 'oliveyoung';
+export type Brand = 'dr' | 'hoho' | 'chungmijung' | 'bioga' | 'bancor' | 'odroy' | 'oliveyoung' | 'roas';
 
 export interface BrandConfig {
   label: string;
@@ -102,9 +101,17 @@ export const BRAND_CONFIG: Record<Brand, BrandConfig> = {
   bancor:       { label: '반코르',   activeClass: 'bg-amber-600 text-white shadow',  codePrefix: 'Va-' },
   odroy:        { label: '오드로이', activeClass: 'bg-purple-600 text-white shadow', codePrefix: 'Od-' },
   oliveyoung:   { label: '올리브영', activeClass: 'bg-green-700 text-white shadow',  codePrefix: 'Ol-' },
+  roas:         { label: 'TEST', activeClass: 'bg-indigo-700 text-white shadow', codePrefix: '' },
 };
 
-export const BRAND_ORDER: Brand[] = ['chungmijung', 'bioga', 'dr', 'hoho', 'bancor', 'odroy', 'oliveyoung'];
+export const BRAND_ORDER: Brand[] = ['chungmijung', 'bioga', 'dr', 'hoho', 'bancor', 'odroy', 'oliveyoung', 'roas'];
+
+export const ROAS_BRAND_ORDER: Brand[] = ['dr', 'hoho'];
+
+// 브랜드별 시트에 '합계'/'매출' 헤더가 여러 번 나와 헤더 텍스트만으로는 열을 특정할 수 없는 경우, 열 문자로 직접 지정한다.
+export const ROAS_COLUMN_OVERRIDES: Partial<Record<Brand, { adSpendCol: string; revenueCol: string }>> = {
+  hoho: { adSpendCol: 'T', revenueCol: 'W' },
+};
 
 export const BANCOR_PRODUCT_LIST = [
   { grade: 'A' as const, name: '리리힐' },
@@ -271,4 +278,5 @@ export const BRAND_PRODUCT_LISTS: Record<Brand, { grade: Grade; name: string }[]
   chungmijung:  CHUNGMIJUNG_PRODUCT_LIST,
   bioga:        BIOGA_PRODUCT_LIST,
   oliveyoung:   [],
+  roas:         [],
 };
