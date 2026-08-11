@@ -50,7 +50,7 @@ export default function Home() {
   const [prevUrl, setPrevUrl] = useState('');
   const [todayDate, setTodayDate] = useState('');
   const [prevDate, setPrevDate] = useState('');
-  const [oyBrand, setOyBrand] = useState<Brand>('chungmijung');
+  const [oyBrand, setOyBrand] = useState<Brand>('dr');
   const [oyUrl, setOyUrl] = useState('');
   const [oyPrevUrl, setOyPrevUrl] = useState('');
   const [oyToday, setOyToday] = useState({ from: '', to: '' });
@@ -271,12 +271,8 @@ export default function Home() {
                 <label className="block text-xs text-gray-500 mb-1">브랜드 선택</label>
                 <select className="w-full border rounded p-2 text-sm"
                   value={oyBrand} onChange={(e) => setOyBrand(e.target.value as Brand)}>
-                  <option value="chungmijung">청미정</option>
-                  <option value="bioga">바이오가</option>
                   <option value="dr">닥터아돌</option>
                   <option value="hoho">호호에미</option>
-                  <option value="bancor">반코르</option>
-                  <option value="odroy">오드로이</option>
                 </select>
               </div>
               <div>
