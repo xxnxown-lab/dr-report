@@ -110,6 +110,7 @@ export const ROAS_BRAND_ORDER: Brand[] = ['dr', 'hoho'];
 
 // 브랜드별 시트에 '합계'/'매출' 헤더가 여러 번 나와 헤더 텍스트만으로는 열을 특정할 수 없는 경우, 열 문자로 직접 지정한다.
 export const ROAS_COLUMN_OVERRIDES: Partial<Record<Brand, { adSpendCol: string; revenueCol: string }>> = {
+  dr: { adSpendCol: 'T', revenueCol: 'W' },
   hoho: { adSpendCol: 'T', revenueCol: 'W' },
 };
 
