@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import type { Brand } from '@/lib/constants';
-import { BRAND_CONFIG, BRAND_ORDER, ROAS_BRAND_ORDER } from '@/lib/constants';
+import { BRAND_CONFIG, BRAND_ORDER, ROAS_BRAND_ORDER, FIVE_BRAND_SUSPENDED, SUSPENDED_BRANDS, SUSPENDED_ROAS_BRANDS } from '@/lib/constants';
 import type { ReportRow, RoasRow } from '@/lib/types';
 import { downloadExcel, downloadOliveyoungExcel, downloadRoasExcel } from '@/lib/excel';
 import DateRangePicker from './DateRangePicker';
@@ -87,6 +87,10 @@ export default function Home() {
   }, []);
 
   const handleGenerate = useCallback(async () => {
+    if (FIVE_BRAND_SUSPENDED && SUSPENDED_BRANDS.includes(brand)) {
+      setError('Unable to Proceed: Resource Not Found');
+      return;
+    }
     if (!todayUrl.trim() || !prevUrl.trim()) {
       setError('당일 URL과 비교일 URL을 모두 입력해주세요.'); return;
     }
@@ -177,6 +181,10 @@ export default function Home() {
   }, [oyRows, oyTodayTotal, oyPrevTotal, oyToday, oyPrev]);
 
   const handleRoasGenerate = useCallback(async () => {
+    if (FIVE_BRAND_SUSPENDED && SUSPENDED_ROAS_BRANDS.includes(roasBrand)) {
+      setError('Unable to Proceed: Resource Not Found');
+      return;
+    }
     if (!roasUrl.trim()) { setError('제품별 ROAS URL을 입력해주세요.'); return; }
 
     setLoading(true);
