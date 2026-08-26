@@ -108,12 +108,18 @@ export const BRAND_ORDER: Brand[] = ['chungmijung', 'bioga', 'dr', 'hoho', 'banc
 
 export const ROAS_BRAND_ORDER: Brand[] = ['dr', 'hoho'];
 
-// "5브랜드중단"/"5브랜드시작" 스위치: true면 닥터아돌을 제외한 5개 브랜드(청미정/바이오가/호호에미/반코르/오드로이) 및
-// TEST(ROAS) 탭의 호호에미 보고서 생성이 막힌다. 올리브영 탭은 이 스위치와 무관하게 항상 정상 동작한다.
+// "5브랜드중단"/"5브랜드시작" 스위치: 호호에미(브랜드 탭 + TEST/ROAS 탭) 보고서 생성 on/off.
+// 호호에미는 오직 이 스위치로만 제어된다 — "4브랜드시작"을 요청해도 호호에미는 풀리지 않는다.
 export const FIVE_BRAND_SUSPENDED = true;
 
-export const SUSPENDED_BRANDS: Brand[] = ['chungmijung', 'bioga', 'hoho', 'bancor', 'odroy'];
-export const SUSPENDED_ROAS_BRANDS: Brand[] = ['hoho'];
+export const HOHO_SUSPENDED_BRANDS: Brand[] = ['hoho'];
+export const HOHO_SUSPENDED_ROAS_BRANDS: Brand[] = ['hoho'];
+
+// "4브랜드중단"/"4브랜드시작" 스위치: 청미정/바이오가/반코르/오드로이 브랜드 탭 보고서 생성 on/off.
+// 닥터아돌과 올리브영 탭은 이 스위치와 무관하게 항상 정상 동작한다.
+export const FOUR_BRAND_SUSPENDED = true;
+
+export const FOUR_SUSPENDED_BRANDS: Brand[] = ['chungmijung', 'bioga', 'bancor', 'odroy'];
 
 // 브랜드별 시트에 '합계'/'매출' 헤더가 여러 번 나와 헤더 텍스트만으로는 열을 특정할 수 없는 경우, 열 문자로 직접 지정한다.
 export const ROAS_COLUMN_OVERRIDES: Partial<Record<Brand, { adSpendCol: string; revenueCol: string }>> = {

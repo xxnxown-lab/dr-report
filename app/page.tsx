@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import type { Brand } from '@/lib/constants';
-import { BRAND_CONFIG, BRAND_ORDER, ROAS_BRAND_ORDER, FIVE_BRAND_SUSPENDED, SUSPENDED_BRANDS, SUSPENDED_ROAS_BRANDS } from '@/lib/constants';
+import { BRAND_CONFIG, BRAND_ORDER, ROAS_BRAND_ORDER, FIVE_BRAND_SUSPENDED, HOHO_SUSPENDED_BRANDS, HOHO_SUSPENDED_ROAS_BRANDS, FOUR_BRAND_SUSPENDED, FOUR_SUSPENDED_BRANDS } from '@/lib/constants';
 import type { ReportRow, RoasRow } from '@/lib/types';
 import { downloadExcel, downloadOliveyoungExcel, downloadRoasExcel } from '@/lib/excel';
 import DateRangePicker from './DateRangePicker';
@@ -87,7 +87,10 @@ export default function Home() {
   }, []);
 
   const handleGenerate = useCallback(async () => {
-    if (FIVE_BRAND_SUSPENDED && SUSPENDED_BRANDS.includes(brand)) {
+    if (
+      (FIVE_BRAND_SUSPENDED && HOHO_SUSPENDED_BRANDS.includes(brand)) ||
+      (FOUR_BRAND_SUSPENDED && FOUR_SUSPENDED_BRANDS.includes(brand))
+    ) {
       setError('Unable to Proceed: Resource Not Found');
       return;
     }
@@ -181,7 +184,7 @@ export default function Home() {
   }, [oyRows, oyTodayTotal, oyPrevTotal, oyToday, oyPrev]);
 
   const handleRoasGenerate = useCallback(async () => {
-    if (FIVE_BRAND_SUSPENDED && SUSPENDED_ROAS_BRANDS.includes(roasBrand)) {
+    if (FIVE_BRAND_SUSPENDED && HOHO_SUSPENDED_ROAS_BRANDS.includes(roasBrand)) {
       setError('Unable to Proceed: Resource Not Found');
       return;
     }
