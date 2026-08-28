@@ -117,7 +117,7 @@ export const HOHO_SUSPENDED_ROAS_BRANDS: Brand[] = ['hoho'];
 
 // "4브랜드중단"/"4브랜드시작" 스위치: 청미정/바이오가/반코르/오드로이 브랜드 탭 보고서 생성 on/off.
 // 닥터아돌과 올리브영 탭은 이 스위치와 무관하게 항상 정상 동작한다.
-export const FOUR_BRAND_SUSPENDED = true;
+export const FOUR_BRAND_SUSPENDED = false;
 
 export const FOUR_SUSPENDED_BRANDS: Brand[] = ['chungmijung', 'bioga', 'bancor', 'odroy'];
 
