@@ -55,6 +55,8 @@ export const HOHOEMI_CODE_MAP: Record<string, string> = {
 export interface OliveyoungProductDef {
   keywords: string[];
   displayName: string;
+  /** true면 키워드에 매칭되는 모든 컬럼의 판매량을 합산한다 (예: 이벤트성 제품이 URL 리스트에 추가된 경우). */
+  sumMatches?: boolean;
 }
 
 export const DR_OLIVEYOUNG_PRODUCTS: OliveyoungProductDef[] = [
@@ -69,7 +71,7 @@ export const DR_OLIVEYOUNG_PRODUCTS: OliveyoungProductDef[] = [
   { keywords: ['프로폴리스'],         displayName: '프로폴리스아연C' },
   { keywords: ['판토스'],             displayName: '판토스멀티비타민' },
   { keywords: ['블랙'],               displayName: '블랙 프로바이오틱스' },
-  { keywords: ['카테킨', '아세로라'], displayName: '카테킨아세로라CD' },
+  { keywords: ['카테킨', '아세로라'], displayName: '카테킨아세로라CD', sumMatches: true },
   { keywords: ['밀크'],               displayName: '밀크씨슬' },
   { keywords: ['식물성', '알티지'],   displayName: '식물성알티지오메가3' },
   { keywords: ['루테인'],             displayName: '루테인' },

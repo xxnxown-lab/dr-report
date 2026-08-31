@@ -25,16 +25,21 @@ export async function POST(req: NextRequest) {
     if (productDefs) {
       // 키워드 매핑: 정의된 순서대로 표시명으로 출력
       products = productDefs.map((def) => {
-        const todayIdx = todayParsed.productNames.findIndex((n) =>
-          def.keywords.some((kw) => n.toLowerCase().includes(kw.toLowerCase()))
-        );
-        const prevIdx = prevParsed.productNames.findIndex((n) =>
-          def.keywords.some((kw) => n.toLowerCase().includes(kw.toLowerCase()))
-        );
+        const matches = (name: string) =>
+          def.keywords.some((kw) => name.toLowerCase().includes(kw.toLowerCase()));
+
+        const sumFor = (names: string[], qtys: number[]) => {
+          const idxs = names.reduce<number[]>((acc, n, i) => (matches(n) ? [...acc, i] : acc), []);
+          // sumMatches: 매칭되는 모든 컬럼 합산 (이벤트성 제품이 리스트에 추가/제거되는 경우 대응)
+          // 기본: 첫 매칭 컬럼만 사용
+          const used = def.sumMatches ? idxs : idxs.slice(0, 1);
+          return used.reduce((s, i) => s + Math.max(0, qtys[i] ?? 0), 0);
+        };
+
         return {
           name: def.displayName,
-          todayQty: Math.max(0, todayIdx !== -1 ? (todayQtys[todayIdx] ?? 0) : 0),
-          prevQty:  Math.max(0, prevIdx  !== -1 ? (prevQtys[prevIdx]   ?? 0) : 0),
+          todayQty: sumFor(todayParsed.productNames, todayQtys),
+          prevQty:  sumFor(prevParsed.productNames, prevQtys),
         };
       });
     } else {
