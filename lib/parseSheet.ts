@@ -192,7 +192,7 @@ export function keywordMap(productName: string): string | null {
   if (n.includes('비오틴')) return '비오틴';
   if (n.includes('프로폴리스')) return '프로폴리스';
   if (n.includes('멀티비타민') && n.includes('우먼')) return '멀티비타민 우먼';
-  if (n.includes('망고')) return '멀티비타민 망고맛';
+  if (n.includes('망고') || n.includes('곰젤리')) return '멀티비타민 망고맛';
   if (n.includes('멀티비타민')) return '멀티비타민';
   if (n.includes('루테인')) return '루테인';
   if (n.includes('베타카로틴')) return '베타카로틴 오메가3';
