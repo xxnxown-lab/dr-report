@@ -12,6 +12,7 @@ export const PRODUCT_LIST = [
   { grade: 'B' as const, name: '밀크씨슬' },
   { grade: 'C' as const, name: '멀티비타민' },
   { grade: 'C' as const, name: '멀티비타민 우먼' },
+  { grade: 'C' as const, name: '멀티비타민 망고맛' },
   { grade: 'C' as const, name: '이지먼스' },
   { grade: 'C' as const, name: '루테인' },
   { grade: 'C' as const, name: '오메가3' },
