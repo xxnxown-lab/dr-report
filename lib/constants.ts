@@ -137,15 +137,16 @@ export const BANCOR_PRODUCT_LIST = [
   { grade: 'A' as const, name: '맥주효모샴푸' },
   { grade: 'A' as const, name: '덱스판테놀크림' },
   { grade: 'B' as const, name: '바하폼클렌저' },
+  { grade: 'B' as const, name: '잡티세럼' },
   { grade: 'B' as const, name: '세라마이드토너' },
   { grade: 'B' as const, name: '세라마이드크림' },
-  { grade: 'C' as const, name: '스쿠알란앰플' },
   { grade: 'C' as const, name: '여성청결제' },
   { grade: 'C' as const, name: '맥주트리트먼트' },
-  { grade: 'C' as const, name: '잡티세럼' },
+  { grade: 'C' as const, name: '바하바디워시' },
+  { grade: 'C' as const, name: '아몬드세럼' },
+  { grade: 'C' as const, name: '스쿠알란앰플' },
   { grade: 'C' as const, name: '덱스판테놀샴푸' },
   { grade: 'C' as const, name: '바하겔' },
-  { grade: 'C' as const, name: '블레미쉬스카겔' },
 ];
 
 export const BANCOR_CODE_MAP: Record<string, string> = {
@@ -164,8 +165,9 @@ export const BANCOR_CODE_MAP: Record<string, string> = {
   'Va-0056':   '맥주트리트먼트',
   'Va-0069':   '잡티세럼',
   'Va-0063':   '덱스판테놀샴푸',
-  'Va-0064':   '블레미쉬스카겔',
   'Va-0005':   '바하겔',
+  'Va-0049':   '바하바디워시',
+  'Va-0066':   '아몬드세럼',
 };
 
 export const ODROY_PRODUCT_LIST = [
