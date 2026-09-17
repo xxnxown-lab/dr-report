@@ -111,16 +111,16 @@ export const BRAND_ORDER: Brand[] = ['chungmijung', 'bioga', 'dr', 'hoho', 'banc
 
 export const ROAS_BRAND_ORDER: Brand[] = ['dr', 'hoho'];
 
-// "5브랜드중단"/"5브랜드시작" 스위치: 호호에미(브랜드 탭 + TEST/ROAS 탭) 보고서 생성 on/off.
-// 호호에미는 오직 이 스위치로만 제어된다 — "4브랜드시작"을 요청해도 호호에미는 풀리지 않는다.
+// "5브랜드중단"/"5브랜드시작" 스위치: 호호에미 브랜드 탭 보고서 생성 on/off.
+// TEST(ROAS) 탭은 이 스위치와 무관하게 항상 정상 동작한다 (호호에미 포함).
 export const FIVE_BRAND_SUSPENDED = true;
 
 export const HOHO_SUSPENDED_BRANDS: Brand[] = ['hoho'];
-export const HOHO_SUSPENDED_ROAS_BRANDS: Brand[] = ['hoho'];
+export const HOHO_SUSPENDED_ROAS_BRANDS: Brand[] = [];
 
 // "4브랜드중단"/"4브랜드시작" 스위치: 청미정/바이오가/반코르/오드로이 브랜드 탭 보고서 생성 on/off.
 // 닥터아돌과 올리브영 탭은 이 스위치와 무관하게 항상 정상 동작한다.
-export const FOUR_BRAND_SUSPENDED = false;
+export const FOUR_BRAND_SUSPENDED = true;
 
 export const FOUR_SUSPENDED_BRANDS: Brand[] = ['chungmijung', 'bioga', 'bancor', 'odroy'];
 
