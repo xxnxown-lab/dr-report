@@ -120,9 +120,10 @@ export const HOHO_SUSPENDED_ROAS_BRANDS: Brand[] = [];
 
 // "4브랜드중단"/"4브랜드시작" 스위치: 청미정/바이오가/반코르/오드로이 브랜드 탭 보고서 생성 on/off.
 // 닥터아돌과 올리브영 탭은 이 스위치와 무관하게 항상 정상 동작한다.
+// 2026-09-22: 반코르/오드로이는 재개. 청미정/바이오가만 계속 차단.
 export const FOUR_BRAND_SUSPENDED = true;
 
-export const FOUR_SUSPENDED_BRANDS: Brand[] = ['chungmijung', 'bioga', 'bancor', 'odroy'];
+export const FOUR_SUSPENDED_BRANDS: Brand[] = ['chungmijung', 'bioga'];
 
 // 브랜드별 시트에 '합계'/'매출' 헤더가 여러 번 나와 헤더 텍스트만으로는 열을 특정할 수 없는 경우, 열 문자로 직접 지정한다.
 export const ROAS_COLUMN_OVERRIDES: Partial<Record<Brand, { adSpendCol: string; revenueCol: string }>> = {
