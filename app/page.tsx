@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import type { Brand } from '@/lib/constants';
-import { BRAND_CONFIG, BRAND_ORDER, ROAS_BRAND_ORDER, FIVE_BRAND_SUSPENDED, HOHO_SUSPENDED_BRANDS, HOHO_SUSPENDED_ROAS_BRANDS, FOUR_BRAND_SUSPENDED, FOUR_SUSPENDED_BRANDS } from '@/lib/constants';
+import { BRAND_CONFIG, BRAND_ORDER, OLIVEYOUNG_BRAND_ORDER, ROAS_BRAND_ORDER, FIVE_BRAND_SUSPENDED, HOHO_SUSPENDED_BRANDS, HOHO_SUSPENDED_ROAS_BRANDS, FOUR_BRAND_SUSPENDED, FOUR_SUSPENDED_BRANDS } from '@/lib/constants';
 import type { ReportRow, RoasRow } from '@/lib/types';
 import { downloadExcel, downloadOliveyoungExcel, downloadRoasExcel } from '@/lib/excel';
 import DateRangePicker from './DateRangePicker';
@@ -282,8 +282,9 @@ export default function Home() {
                 <label className="block text-xs text-gray-500 mb-1">브랜드 선택</label>
                 <select className="w-full border rounded p-2 text-sm"
                   value={oyBrand} onChange={(e) => setOyBrand(e.target.value as Brand)}>
-                  <option value="dr">닥터아돌</option>
-                  <option value="hoho">호호에미</option>
+                  {OLIVEYOUNG_BRAND_ORDER.map((b) => (
+                    <option key={b} value={b}>{BRAND_CONFIG[b].label}</option>
+                  ))}
                 </select>
               </div>
               <div>

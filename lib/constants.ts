@@ -83,8 +83,41 @@ export const DR_OLIVEYOUNG_PRODUCTS: OliveyoungProductDef[] = [
   { keywords: ['21포'],               displayName: '위디어트' },
 ];
 
+// 오드로이 올리브영 품목: 실제 올리브영 시트(Od 올리브영 판매현황) 컬럼명 기준.
+// 국내용 ODROY_PRODUCT_LIST와 품목 구성/이름이 다르므로 이 시트 컬럼명에 맞춘 별도 키워드 매핑을 사용한다.
+// 2026-09-23: 사용자 확인 매핑 —
+//   모공수축크림 더블 = "모공수축(더블)" + "모공수축 더블기획(+미스트)" 합산
+//   모공수축크림 단품 = "모공수축크림"
+//   리프팅세럼        = "카르노신세럼"
+//   등잡티크림        = "등잡티젤크림"
+//   미스트            = "83.7 미스트앰플"
+export const ODROY_OLIVEYOUNG_PRODUCTS: OliveyoungProductDef[] = [
+  { keywords: ['(더블)', '+미스트'], displayName: '모공수축크림 더블', sumMatches: true },
+  { keywords: ['모공수축크림'],      displayName: '모공수축크림 단품' },
+  { keywords: ['축소'],              displayName: '모공축소선크림' },
+  { keywords: ['카르노신'],          displayName: '리프팅세럼' },
+  { keywords: ['시카'],              displayName: '시카앰플' },
+  { keywords: ['등잡티'],            displayName: '등잡티크림' },
+  { keywords: ['중주파'],            displayName: '중주파마사지기' },
+  { keywords: ['미스트앰플'],        displayName: '미스트' },
+];
+
+// 반코르 올리브영 품목: 실제 올리브영 시트(Va 올리브영 판매현황) 컬럼명 기준.
+// 국내용 BANCOR_PRODUCT_LIST(16개)와 달리 올리브영에서 판매하는 품목은 3개뿐이다.
+// 2026-09-23: 사용자 확인 매핑 —
+//   리리힐         = "리리힐"
+//   덱스판테놀크림 = "덱스크림"
+//   맥주효모샴푸   = "맥주샴푸"
+export const BANCOR_OLIVEYOUNG_PRODUCTS: OliveyoungProductDef[] = [
+  { keywords: ['리리힐'],   displayName: '리리힐' },
+  { keywords: ['덱스크림'], displayName: '덱스판테놀크림' },
+  { keywords: ['맥주샴푸'], displayName: '맥주효모샴푸' },
+];
+
 export const OLIVEYOUNG_BRAND_PRODUCTS: Partial<Record<string, OliveyoungProductDef[]>> = {
   dr: DR_OLIVEYOUNG_PRODUCTS,
+  odroy: ODROY_OLIVEYOUNG_PRODUCTS,
+  bancor: BANCOR_OLIVEYOUNG_PRODUCTS,
 };
 
 export type Grade = 'A' | 'B' | 'C';
@@ -110,6 +143,9 @@ export const BRAND_CONFIG: Record<Brand, BrandConfig> = {
 export const BRAND_ORDER: Brand[] = ['chungmijung', 'bioga', 'dr', 'hoho', 'bancor', 'odroy', 'oliveyoung', 'roas'];
 
 export const ROAS_BRAND_ORDER: Brand[] = ['dr', 'hoho'];
+
+// 올리브영 탭의 '브랜드 선택' 드롭다운 순서 (브랜드 탭 목록과 별개로 관리)
+export const OLIVEYOUNG_BRAND_ORDER: Brand[] = ['dr', 'hoho', 'odroy', 'bancor'];
 
 // "5브랜드중단"/"5브랜드시작" 스위치: 호호에미 브랜드 탭 보고서 생성 on/off.
 // TEST(ROAS) 탭은 이 스위치와 무관하게 항상 정상 동작한다 (호호에미 포함).
