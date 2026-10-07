@@ -206,6 +206,7 @@ export function keywordMap(productName: string): string | null {
 
 export function hohoKeywordMap(productName: string): string | null {
   const n = productName.toLowerCase();
+  if (n.includes('청결')) return '여성청결제';
   if (n.includes('무향') && n.includes('세제')) return '무향세제';
   if (n.includes('라임') && n.includes('유연')) return '라임유연제';
   if (n.includes('라임') && n.includes('세제')) return '라임세제';

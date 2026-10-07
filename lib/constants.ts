@@ -26,12 +26,13 @@ export const PRODUCT_LIST = [
 export const HOHOEMI_PRODUCT_LIST = [
   { grade: 'A' as const, name: '무향세제' },
   { grade: 'A' as const, name: '섬유유연제' },
+  { grade: 'A' as const, name: '여성청결제' },
   { grade: 'A' as const, name: '바스샴푸' },
-  { grade: 'A' as const, name: '주방세제' },
-  { grade: 'A' as const, name: '크림' },
-  { grade: 'A' as const, name: '로션' },
-  { grade: 'A' as const, name: '라임세제' },
-  { grade: 'A' as const, name: '라임유연제' },
+  { grade: 'B' as const, name: '주방세제' },
+  { grade: 'B' as const, name: '크림' },
+  { grade: 'B' as const, name: '로션' },
+  { grade: 'B' as const, name: '라임세제' },
+  { grade: 'B' as const, name: '라임유연제' },
   { grade: 'B' as const, name: '선크림' },
   { grade: 'B' as const, name: '손세정제' },
   { grade: 'B' as const, name: '오일' },
@@ -51,6 +52,7 @@ export const HOHOEMI_CODE_MAP: Record<string, string> = {
   'Ho-013': '선크림',
   'Ho-014': '오일',
   'Ho-015': '손세정제',
+  'Ho-020': '여성청결제',
 };
 
 export interface OliveyoungProductDef {
