@@ -149,7 +149,8 @@ export const OLIVEYOUNG_BRAND_ORDER: Brand[] = ['dr', 'hoho', 'odroy', 'bancor']
 
 // "5브랜드중단"/"5브랜드시작" 스위치: 호호에미 브랜드 탭 보고서 생성 on/off.
 // TEST(ROAS) 탭은 이 스위치와 무관하게 항상 정상 동작한다 (호호에미 포함).
-export const FIVE_BRAND_SUSPENDED = true;
+// 2026-10-07: 호호에미 재개.
+export const FIVE_BRAND_SUSPENDED = false;
 
 export const HOHO_SUSPENDED_BRANDS: Brand[] = ['hoho'];
 export const HOHO_SUSPENDED_ROAS_BRANDS: Brand[] = [];
