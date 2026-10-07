@@ -167,7 +167,13 @@ export const FOUR_SUSPENDED_BRANDS: Brand[] = ['chungmijung', 'bioga'];
 // 브랜드별 시트에 '합계'/'매출' 헤더가 여러 번 나와 헤더 텍스트만으로는 열을 특정할 수 없는 경우, 열 문자로 직접 지정한다.
 export const ROAS_COLUMN_OVERRIDES: Partial<Record<Brand, { adSpendCol: string; revenueCol: string }>> = {
   dr: { adSpendCol: 'T', revenueCol: 'W' },
-  hoho: { adSpendCol: 'T', revenueCol: 'W' },
+  // 2026-10-07: 호호에미 시트 열 변경 — U열 '광고합계', X열 '매출' (T열은 예roas, W열은 실roas)
+  hoho: { adSpendCol: 'U', revenueCol: 'X' },
+};
+
+// TEST(ROAS) 탭에서 결과에 표시하지 않을 시트 품목 (품목명에 키워드가 포함되면 제외)
+export const ROAS_EXCLUDED_KEYWORDS: Partial<Record<Brand, string[]>> = {
+  hoho: ['식기세척기'],
 };
 
 export const BANCOR_PRODUCT_LIST = [

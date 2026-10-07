@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { BRAND_CONFIG, BRAND_PRODUCT_LISTS } from '@/lib/constants';
+import { BRAND_CONFIG, BRAND_PRODUCT_LISTS, ROAS_EXCLUDED_KEYWORDS } from '@/lib/constants';
 import type { Brand } from '@/lib/constants';
 import { parseRoasSheet, matchRoasToCanonical } from '@/lib/parseSheet';
 import type { RoasRow } from '@/lib/types';
@@ -23,7 +23,10 @@ export async function POST(req: NextRequest) {
 
     const extras: { name: string; adSpend: number; revenue: number }[] = [];
 
+    const excluded = ROAS_EXCLUDED_KEYWORDS[brand] ?? [];
+
     for (const item of parsed) {
+      if (excluded.some((kw) => item.name.includes(kw))) continue;
       const canonical = matchRoasToCanonical(item.name, brand);
       const entry = canonical ? grouped.get(canonical) : undefined;
       if (canonical && entry) {
