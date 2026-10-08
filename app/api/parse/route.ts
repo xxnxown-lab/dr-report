@@ -108,7 +108,8 @@ export async function POST(req: NextRequest) {
       return { grade: item.grade, name: item.name, isSpecial: false, todayQty: t, prevQty: p, changeSymbol: symbol(t, p, blankOnEqual) };
     });
 
-    rows.push({ grade: null, name: brandRowName, isSpecial: true, todayQty: brandTotal, prevQty: brandTotalPrev, changeSymbol: symbol(brandTotal, brandTotalPrev, blankOnEqual) });
+    // 호호에미는 브랜드 행(이름만 표시)을 B등급 맨 아래에 묶어서 보여준다.
+    rows.push({ grade: brand === 'hoho' ? 'B' : null, name: brandRowName, isSpecial: true, todayQty: brandTotal, prevQty: brandTotalPrev, changeSymbol: symbol(brandTotal, brandTotalPrev, blankOnEqual) });
 
     const totalToday = rows.filter((r) => !r.isSpecial).reduce((s, r) => s + r.todayQty, 0);
     const totalPrev = rows.filter((r) => !r.isSpecial).reduce((s, r) => s + r.prevQty, 0);

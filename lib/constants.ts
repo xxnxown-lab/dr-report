@@ -26,8 +26,8 @@ export const PRODUCT_LIST = [
 export const HOHOEMI_PRODUCT_LIST = [
   { grade: 'A' as const, name: '무향세제' },
   { grade: 'A' as const, name: '섬유유연제' },
-  { grade: 'A' as const, name: '여성청결제' },
   { grade: 'A' as const, name: '바스샴푸' },
+  { grade: 'B' as const, name: '여성청결제' },
   { grade: 'B' as const, name: '주방세제' },
   { grade: 'B' as const, name: '크림' },
   { grade: 'B' as const, name: '로션' },
