@@ -28,4 +28,6 @@ export interface RoasRow {
   adSpend: number;
   revenue: number;
   roas: number;
+  /** true면 숫자 없이 이름만 표시하는 행 (예: TEST탭 호호에미 브랜드 행) */
+  nameOnly?: boolean;
 }

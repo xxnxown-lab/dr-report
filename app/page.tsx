@@ -215,7 +215,7 @@ export default function Home() {
   const handleRoasCopy = useCallback(async () => {
     if (!roasRows.length) return;
     const header = ['등급', '제품', '광고비', 'ROAS', '매출'];
-    const dataRows = roasRows.filter((row) => row.grade).map((row) => [
+    const dataRows = roasRows.filter((row) => row.grade).map((row) => row.nameOnly ? [row.grade ?? '', row.name, '', '', ''] : [
       row.grade ?? '', row.name,
       row.adSpend || '', row.adSpend > 0 ? `${row.roas.toFixed(0)}%` : '-', row.revenue || '',
     ]);
@@ -442,13 +442,13 @@ export default function Home() {
                       ) : null}
                       <td className="border border-gray-300 px-2 py-0.5 whitespace-nowrap">{row.name}</td>
                       <td className="border border-gray-300 px-2 py-0.5 text-right">
-                        {row.adSpend > 0 ? fmt(row.adSpend) : '-'}
+                        {row.nameOnly ? '' : row.adSpend > 0 ? fmt(row.adSpend) : '-'}
                       </td>
                       <td className="border border-gray-300 px-2 py-0.5 text-right font-bold">
-                        {row.adSpend > 0 ? `${row.roas.toFixed(0)}%` : '-'}
+                        {row.nameOnly ? '' : row.adSpend > 0 ? `${row.roas.toFixed(0)}%` : '-'}
                       </td>
                       <td className="border border-gray-300 px-2 py-0.5 text-right">
-                        {row.revenue > 0 ? fmt(row.revenue) : '-'}
+                        {row.nameOnly ? '' : row.revenue > 0 ? fmt(row.revenue) : '-'}
                       </td>
                     </tr>
                   );

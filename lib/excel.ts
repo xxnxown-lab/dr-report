@@ -145,7 +145,7 @@ export function downloadRoasExcel(
   const headerRow1 = [`${brandLabel} 제품별 ROAS`, '', '', '', ''];
   const headerRow2 = ['등급', '제품', '광고비', 'ROAS', '매출'];
 
-  const dataRows = rows.map((row) => [
+  const dataRows = rows.map((row) => row.nameOnly ? [row.grade ?? '', row.name, '', '', ''] : [
     row.grade ?? '',
     row.name,
     row.adSpend,

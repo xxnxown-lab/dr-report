@@ -48,6 +48,11 @@ export async function POST(req: NextRequest) {
       };
     });
 
+    // 호호에미는 브랜드 탭과 동일하게 B등급 맨 아래에 이름만 있는 브랜드 행을 둔다.
+    if (brand === 'hoho') {
+      rows.push({ grade: 'B', name: BRAND_CONFIG.hoho.label, adSpend: 0, revenue: 0, roas: 0, nameOnly: true });
+    }
+
     for (const e of extras) {
       rows.push({
         grade: null,
