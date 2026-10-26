@@ -42,6 +42,7 @@ export const HOHOEMI_PRODUCT_LIST = [
 
 // 닥터아돌은 기본적으로 keywordMap(상품명 키워드)으로 매칭하고, 여기 등록된 코드는 우선 적용된다.
 export const DR_CODE_MAP: Record<string, string> = {
+  'Dr-007': '오메가3',
   'Dr-028': '식물성 오메가3',
 };
 

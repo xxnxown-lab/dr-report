@@ -77,10 +77,10 @@ export async function POST(req: NextRequest) {
       } catch { /* fallback to keyword map */ }
     }
 
+    // 코드 매핑에 등록된 제품은 AI 결과보다 우선한다 (비교일 집계와 동일한 기준).
     for (const p of parsedToday.products) {
-      if (!codeToReport.has(p.code)) {
-        codeToReport.set(p.code, codeMap[p.code] ?? kwMap(p.name));
-      }
+      if (codeMap[p.code]) codeToReport.set(p.code, codeMap[p.code]);
+      else if (!codeToReport.has(p.code)) codeToReport.set(p.code, kwMap(p.name));
     }
 
     const todayQtyMap = new Map<string, number>();
