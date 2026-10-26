@@ -17,6 +17,7 @@ export const PRODUCT_LIST = [
   { grade: 'C' as const, name: '루테인' },
   { grade: 'C' as const, name: '오메가3' },
   { grade: 'C' as const, name: '베타카로틴 오메가3' },
+  { grade: 'C' as const, name: '식물성 오메가3' },
   { grade: 'C' as const, name: '철분' },
   { grade: 'C' as const, name: '크랜베리' },
   { grade: 'C' as const, name: '치약' },
@@ -38,6 +39,11 @@ export const HOHOEMI_PRODUCT_LIST = [
   { grade: 'B' as const, name: '오일' },
   { grade: 'B' as const, name: '수딩겔' },
 ];
+
+// 닥터아돌은 기본적으로 keywordMap(상품명 키워드)으로 매칭하고, 여기 등록된 코드는 우선 적용된다.
+export const DR_CODE_MAP: Record<string, string> = {
+  'Dr-028': '식물성 오메가3',
+};
 
 export const HOHOEMI_CODE_MAP: Record<string, string> = {
   'Ho-001': '무향세제',

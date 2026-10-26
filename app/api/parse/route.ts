@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
-import { HOHOEMI_CODE_MAP, BANCOR_CODE_MAP, ODROY_CODE_MAP, CHUNGMIJUNG_CODE_MAP, BIOGA_CODE_MAP, BRAND_CONFIG, BRAND_PRODUCT_LISTS } from '@/lib/constants';
+import { DR_CODE_MAP, HOHOEMI_CODE_MAP, BANCOR_CODE_MAP, ODROY_CODE_MAP, CHUNGMIJUNG_CODE_MAP, BIOGA_CODE_MAP, BRAND_CONFIG, BRAND_PRODUCT_LISTS } from '@/lib/constants';
 import { parseSheetText, matchDayToLabel, keywordMap, hohoKeywordMap } from '@/lib/parseSheet';
 import type { ReportRow, ChangeSymbol } from '@/lib/types';
 import type { Brand } from '@/lib/constants';
@@ -18,6 +18,7 @@ function getKwMap(brand: Brand): (name: string) => string | null {
 }
 
 function getCodeMap(brand: Brand): Record<string, string> {
+  if (brand === 'dr') return DR_CODE_MAP;
   if (brand === 'hoho') return HOHOEMI_CODE_MAP;
   if (brand === 'bancor') return BANCOR_CODE_MAP;
   if (brand === 'odroy') return ODROY_CODE_MAP;

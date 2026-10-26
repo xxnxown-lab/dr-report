@@ -196,6 +196,7 @@ export function keywordMap(productName: string): string | null {
   if (n.includes('멀티비타민')) return '멀티비타민';
   if (n.includes('루테인')) return '루테인';
   if (n.includes('베타카로틴')) return '베타카로틴 오메가3';
+  if (n.includes('식물성') || n.includes('알티지')) return '식물성 오메가3';
   if (n.includes('오메가3')) return '오메가3';
   if (n.includes('철분') || n.includes('비헴철')) return '철분';
   if (n.includes('치약') || n.includes('투스페이스트')) return '치약';
