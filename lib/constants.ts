@@ -130,7 +130,7 @@ export const OLIVEYOUNG_BRAND_PRODUCTS: Partial<Record<string, OliveyoungProduct
 };
 
 export type Grade = 'A' | 'B' | 'C';
-export type Brand = 'dr' | 'hoho' | 'chungmijung' | 'bioga' | 'bancor' | 'odroy' | 'oliveyoung' | 'roas';
+export type Brand = 'dr' | 'hoho' | 'chungmijung' | 'bioga' | 'bancor' | 'odroy' | 'oliveyoung' | 'roas' | 'seeding';
 
 export interface BrandConfig {
   label: string;
@@ -147,9 +147,10 @@ export const BRAND_CONFIG: Record<Brand, BrandConfig> = {
   odroy:        { label: '오드로이', activeClass: 'bg-purple-600 text-white shadow', codePrefix: 'Od-' },
   oliveyoung:   { label: '올리브영', activeClass: 'bg-green-700 text-white shadow',  codePrefix: 'Ol-' },
   roas:         { label: 'TEST', activeClass: 'bg-indigo-700 text-white shadow', codePrefix: '' },
+  seeding:      { label: '시딩', activeClass: 'bg-pink-700 text-white shadow', codePrefix: '' },
 };
 
-export const BRAND_ORDER: Brand[] = ['chungmijung', 'bioga', 'dr', 'hoho', 'bancor', 'odroy', 'oliveyoung', 'roas'];
+export const BRAND_ORDER: Brand[] = ['chungmijung', 'bioga', 'dr', 'hoho', 'bancor', 'odroy', 'oliveyoung', 'roas', 'seeding'];
 
 export const ROAS_BRAND_ORDER: Brand[] = ['dr', 'hoho'];
 
@@ -340,4 +341,5 @@ export const BRAND_PRODUCT_LISTS: Record<Brand, { grade: Grade; name: string }[]
   bioga:        BIOGA_PRODUCT_LIST,
   oliveyoung:   [],
   roas:         [],
+  seeding:      [],
 };

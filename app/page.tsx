@@ -5,6 +5,8 @@ import type { Brand } from '@/lib/constants';
 import { BRAND_CONFIG, BRAND_ORDER, OLIVEYOUNG_BRAND_ORDER, ROAS_BRAND_ORDER, FIVE_BRAND_SUSPENDED, HOHO_SUSPENDED_BRANDS, HOHO_SUSPENDED_ROAS_BRANDS, FOUR_BRAND_SUSPENDED, FOUR_SUSPENDED_BRANDS } from '@/lib/constants';
 import type { ReportRow, RoasRow } from '@/lib/types';
 import { downloadExcel, downloadOliveyoungExcel, downloadRoasExcel } from '@/lib/excel';
+import { SEEDING_CONFIG, SEEDING_PLATFORMS, parseSeedingExcel, buildSeedingResult } from '@/lib/seeding';
+import type { SeedingPlatform, SeedingResult } from '@/lib/seeding';
 import DateRangePicker from './DateRangePicker';
 
 function fmt(n: number): string {
@@ -68,6 +70,11 @@ export default function Home() {
   const [roasTotalRoas, setRoasTotalRoas] = useState(0);
   const [roasCopied, setRoasCopied] = useState(false);
 
+  const [seedUrl, setSeedUrl] = useState('');
+  const [seedFiles, setSeedFiles] = useState<Partial<Record<SeedingPlatform, File>>>({});
+  const [seedResults, setSeedResults] = useState<Partial<Record<SeedingPlatform, SeedingResult>>>({});
+  const [seedCopied, setSeedCopied] = useState('');
+
   const [reportRows, setReportRows] = useState<ReportRow[]>([]);
   const [reportDate, setReportDate] = useState('');
   const [prevLabel, setPrevLabel] = useState('');
@@ -82,7 +89,8 @@ export default function Home() {
     setBrand(b);
     if (b !== 'oliveyoung') setOyRows([]);
     if (b !== 'roas') setRoasRows([]);
-    if (b === 'oliveyoung' || b === 'roas') setReportRows([]);
+    if (b !== 'seeding') setSeedResults({});
+    if (b === 'oliveyoung' || b === 'roas' || b === 'seeding') setReportRows([]);
     setError('');
   }, []);
 
@@ -229,6 +237,41 @@ export default function Home() {
     downloadRoasExcel(roasRows.filter((r) => r.grade), BRAND_CONFIG[roasBrand].label, roasTotalAdSpend, roasTotalRevenue, roasTotalRoas);
   }, [roasRows, roasBrand, roasTotalAdSpend, roasTotalRevenue, roasTotalRoas]);
 
+  const handleSeedGenerate = useCallback(async () => {
+    const targets = SEEDING_PLATFORMS.filter((p) => seedFiles[p]);
+    if (!targets.length) { setError('광고 데이터 엑셀 파일을 선택해주세요.'); return; }
+    if (!seedUrl.trim()) { setError('시딩 시트 날짜 탭 URL을 입력해주세요.'); return; }
+
+    setLoading(true);
+    setError('');
+    setSeedResults({});
+    try {
+      const text = await fetchTabText(seedUrl);
+      const results: Partial<Record<SeedingPlatform, SeedingResult>> = {};
+      for (const p of targets) {
+        try {
+          const buf = await seedFiles[p]!.arrayBuffer();
+          results[p] = buildSeedingResult(text, parseSeedingExcel(buf, p), p);
+        } catch (e: unknown) {
+          throw new Error(`[${SEEDING_CONFIG[p].label}] ${e instanceof Error ? e.message : '오류가 발생했습니다.'}`);
+        }
+      }
+      setSeedResults(results);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : '오류가 발생했습니다.');
+    } finally {
+      setLoading(false);
+    }
+  }, [seedFiles, seedUrl]);
+
+  const handleSeedCopy = useCallback(async (platform: SeedingPlatform, block: number) => {
+    const result = seedResults[platform];
+    if (!result) return;
+    await navigator.clipboard.writeText(result.rows.map((r) => r.blocks[block].join('\t')).join('\n'));
+    setSeedCopied(`${platform}-${block}`);
+    setTimeout(() => setSeedCopied(''), 2000);
+  }, [seedResults]);
+
   const handleDownload = useCallback(() => {
     if (!reportRows.length) return;
     downloadExcel(reportRows, reportDate, prevLabel, todayLabel, BRAND_CONFIG[brand].label, grandTotalPrev, grandTotalToday);
@@ -247,7 +290,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gray-50 p-4">
       <h1 className="text-xl font-bold text-gray-800 mb-4">
-        {brandLabel} 결과보고 {reportDate || toMMDD(todayDate) || '--'}
+        {brand === 'seeding' ? '시딩 광고 데이터 정리' : `${brandLabel} 결과보고 ${reportDate || toMMDD(todayDate) || '--'}`}
       </h1>
 
       {/* 브랜드 탭 */}
@@ -257,6 +300,7 @@ export default function Home() {
           const isActive = brand === b;
           const isOliveYoung = b === 'oliveyoung';
           const isRoas = b === 'roas';
+          const isSeeding = b === 'seeding';
           return (
             <button key={b} onClick={() => handleBrandChange(b)}
               className={`px-5 py-2 rounded-lg font-semibold text-sm transition-colors ${
@@ -266,7 +310,9 @@ export default function Home() {
                     ? 'bg-green-500 text-white hover:bg-green-600'
                     : isRoas
                       ? 'bg-indigo-500 text-white hover:bg-indigo-600'
-                      : 'bg-white text-gray-600 border border-gray-300 hover:bg-gray-50'
+                      : isSeeding
+                        ? 'bg-pink-500 text-white hover:bg-pink-600'
+                        : 'bg-white text-gray-600 border border-gray-300 hover:bg-gray-50'
               }`}>
               {cfg.label}
             </button>
@@ -320,6 +366,29 @@ export default function Home() {
                   value={roasUrl} onChange={(e) => setRoasUrl(e.target.value)} />
               </div>
             </>
+          ) : brand === 'seeding' ? (
+            <>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {SEEDING_PLATFORMS.map((p) => (
+                  <div key={p}>
+                    <label className="block text-xs text-gray-500 mb-1">{SEEDING_CONFIG[p].label} 엑셀</label>
+                    <input type="file" accept=".xlsx,.xls,.csv" className="w-full border rounded p-2 text-sm"
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        setSeedFiles((prev) => ({ ...prev, [p]: f }));
+                      }} />
+                  </div>
+                ))}
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">
+                  시딩 시트 날짜 탭 URL <span className="text-gray-400">(붙여넣을 날짜 탭 열고 주소창 URL 복사 — B열 광고명 순서를 가져옴)</span>
+                </label>
+                <input className="w-full border rounded p-2 text-sm"
+                  placeholder="https://docs.google.com/spreadsheets/d/...#gid=1234"
+                  value={seedUrl} onChange={(e) => setSeedUrl(e.target.value)} />
+              </div>
+            </>
           ) : (
             <>
               <div>
@@ -362,6 +431,13 @@ export default function Home() {
             <button onClick={handleRoasGenerate} disabled={loading}
               className="px-6 py-1.5 bg-blue-700 text-white rounded font-medium text-sm disabled:opacity-50">
               {loading ? '생성 중...' : '보고서 생성'}
+            </button>
+          </div>
+        ) : brand === 'seeding' ? (
+          <div className="flex flex-wrap gap-4 mt-4 items-center">
+            <button onClick={handleSeedGenerate} disabled={loading}
+              className="px-6 py-1.5 bg-blue-700 text-white rounded font-medium text-sm disabled:opacity-50">
+              {loading ? '변환 중...' : '변환'}
             </button>
           </div>
         ) : (
@@ -469,8 +545,67 @@ export default function Home() {
         </div>
       )}
 
+      {/* 시딩 붙여넣기 테이블 */}
+      {brand === 'seeding' && SEEDING_PLATFORMS.map((key) => {
+        const seedResult = seedResults[key];
+        if (!seedResult) return null;
+        const { label, blocks } = SEEDING_CONFIG[key];
+        return (
+        <div key={key} className="bg-white rounded-lg shadow mb-4">
+          <div className="flex flex-wrap gap-2 p-3 border-b items-center">
+            <span className="font-semibold text-sm text-pink-800 mr-2">{label}</span>
+            {blocks.map((b, bi) => (
+              <button key={bi} onClick={() => handleSeedCopy(key, bi)}
+                className="px-4 py-1.5 bg-green-600 text-white rounded text-sm font-medium">
+                {seedCopied === `${key}-${bi}` ? '복사됨!' : `${b.label} 복사`}
+              </button>
+            ))}
+            <span className="text-xs text-gray-500">
+              {blocks.map((b, bi) => (
+                <span key={bi}>
+                  {bi > 0 && ' / '}{b.label} → 시트 <strong>{b.columns[0].col}{seedResult.startRow}</strong> 셀 클릭 후 붙여넣기
+                </span>
+              ))}
+            </span>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="text-xs border-collapse">
+              <thead>
+                <tr className="bg-pink-800 text-white">
+                  {['행', '광고명 (B)', ...blocks.flatMap((b) => b.columns.map((c) => `${c.label} (${c.col})`))].map((h) => (
+                    <th key={h} className="border border-pink-700 px-2 py-1 whitespace-nowrap">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {seedResult.rows.map((row, i) => (
+                  <tr key={i} className={row.matched ? 'hover:bg-yellow-50' : 'bg-red-50 text-red-600'}>
+                    <td className="border border-gray-300 px-2 py-0.5 text-center text-gray-400">{seedResult.startRow + i}</td>
+                    <td className="border border-gray-300 px-2 py-0.5 whitespace-nowrap">
+                      {row.name}{!row.matched && ' (엑셀에 없음)'}
+                    </td>
+                    {row.blocks.flat().map((v, j) => (
+                      <td key={j} className="border border-gray-300 px-2 py-0.5 text-right">{v}</td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {seedResult.excelOnly.length > 0 && (
+            <div className="px-3 py-2 border-t text-sm text-amber-700">
+              <span className="font-semibold">엑셀에는 데이터가 있지만 시트 B열에 없는 광고:</span>{' '}
+              {seedResult.excelOnly.join(', ')}
+            </div>
+          )}
+        </div>
+        );
+      })}
+
       {/* 보고서 테이블 */}
-      {brand !== 'oliveyoung' && brand !== 'roas' && reportRows.length > 0 && (
+      {brand !== 'oliveyoung' && brand !== 'roas' && brand !== 'seeding' && reportRows.length > 0 && (
         <div className="bg-white rounded-lg shadow">
           <div className="flex gap-2 p-3 border-b">
             <button onClick={handleCopy}
