@@ -193,7 +193,7 @@ export const SEEDING_ALLOWED_NICKNAMES = [
   '미아',
 ];
 
-export const SEEDING_DENIED_MESSAGE = 'Invalid value. You do not have permission to use this.';
+export const SEEDING_DENIED_MESSAGE = 'Invalid value.';
 
 // 광고 행(헤더 아래 B열이 비기 전까지)의 E열 닉네임이 전부 허용 목록에 있어야 통과
 export function checkSeedingPermission(sheetText: string): boolean {
