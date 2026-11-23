@@ -5,7 +5,7 @@ import type { Brand } from '@/lib/constants';
 import { BRAND_CONFIG, BRAND_ORDER, OLIVEYOUNG_BRAND_ORDER, ROAS_BRAND_ORDER, FIVE_BRAND_SUSPENDED, HOHO_SUSPENDED_BRANDS, HOHO_SUSPENDED_ROAS_BRANDS, FOUR_BRAND_SUSPENDED, FOUR_SUSPENDED_BRANDS } from '@/lib/constants';
 import type { ReportRow, RoasRow } from '@/lib/types';
 import { downloadExcel, downloadOliveyoungExcel, downloadRoasExcel } from '@/lib/excel';
-import { SEEDING_CONFIG, SEEDING_PLATFORMS, parseSeedingExcel, buildSeedingResult } from '@/lib/seeding';
+import { SEEDING_CONFIG, SEEDING_PLATFORMS, SEEDING_DENIED_MESSAGE, checkSeedingPermission, parseSeedingExcel, buildSeedingResult } from '@/lib/seeding';
 import type { SeedingPlatform, SeedingResult } from '@/lib/seeding';
 import DateRangePicker from './DateRangePicker';
 
@@ -247,6 +247,7 @@ export default function Home() {
     setSeedResults({});
     try {
       const text = await fetchTabText(seedUrl);
+      if (!checkSeedingPermission(text)) throw new Error(SEEDING_DENIED_MESSAGE);
       const results: Partial<Record<SeedingPlatform, SeedingResult>> = {};
       for (const p of targets) {
         try {

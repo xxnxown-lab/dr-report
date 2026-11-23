@@ -181,6 +181,33 @@ function fmtCell(v: number | null | undefined, fmt: Fmt): string {
   return String(Math.round(n));
 }
 
+// 시딩 탭 사용 허용 닉네임 (시트 E열 '편집').
+// 추가/삭제는 이 배열만 고치면 된다 — 따옴표로 감싸고 쉼표로 구분.
+export const SEEDING_ALLOWED_NICKNAMES = [
+  '로미',
+  '그린',
+  '나우',
+  '메이',
+  '벤처',
+  '베인스',
+  '미아',
+];
+
+export const SEEDING_DENIED_MESSAGE = 'Invalid value. You do not have permission to use this.';
+
+// 광고 행(헤더 아래 B열이 비기 전까지)의 E열 닉네임이 전부 허용 목록에 있어야 통과
+export function checkSeedingPermission(sheetText: string): boolean {
+  const allowed = new Set(SEEDING_ALLOWED_NICKNAMES.map(norm));
+  const lines = sheetText.split(/\r?\n/).map((l) => l.split('\t'));
+  const headerIdx = lines.findIndex((cells) => norm(cells[2]) === '광고형식');
+  if (headerIdx < 0) return true; // 헤더가 없으면 아래 buildSeedingResult에서 안내 오류를 낸다
+  for (const cells of lines.slice(headerIdx + 1)) {
+    if (!norm(cells[1])) break;
+    if (!allowed.has(norm(cells[4]))) return false;
+  }
+  return true;
+}
+
 // 구글시트 TSV: C열이 '광고형식'인 행이 헤더, 그 아래로 B열이 비기 전까지가 광고 행
 export function buildSeedingResult(sheetText: string, ads: Map<string, ExcelAd>, platform: SeedingPlatform): SeedingResult {
   const lines = sheetText.split(/\r?\n/).map((l) => l.split('\t'));
