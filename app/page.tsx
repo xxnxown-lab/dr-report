@@ -368,7 +368,7 @@ export default function Home() {
             </>
           ) : brand === 'seeding' ? (
             <>
-              <div className="grid gap-3 sm:grid-cols-2">
+              <div className="grid gap-3 sm:grid-cols-3">
                 {SEEDING_PLATFORMS.map((p) => (
                   <div key={p}>
                     <label className="block text-xs text-gray-500 mb-1">{SEEDING_CONFIG[p].label} 엑셀</label>

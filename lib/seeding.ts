@@ -4,10 +4,11 @@ import * as XLSX from 'xlsx';
 // 광고명 끝이 _B / _B_all 이면 인스타그램(브랜디드), _S(_...)면 틱톡(스파크애즈) — 플랫폼별 엑셀을 따로 받는다.
 // 시트 열 사이에 손대면 안 되는 열(P~R 등)이 있어서, 연속된 열끼리 묶어 복사 블록 단위로 붙여넣는다.
 
-export type SeedingPlatform = 'insta' | 'tiktok';
+// tiktokFq: 틱톡 7일간 엑셀 — 틱톡 광고의 M열(FQ)만 따로 채운다
+export type SeedingPlatform = 'insta' | 'tiktok' | 'tiktokFq';
 
 type Field = 'cost' | 'clicks' | 'ctr' | 'freq' | 'atc' | 'vc' | 'hook' | 'pc';
-type Fmt = 'int' | 'pct' | 'dec2';
+type Fmt = 'int' | 'pct' | 'pct0' | 'dec2';
 
 export interface SeedingColumn {
   col: string;
@@ -29,7 +30,7 @@ interface PlatformConfig {
   blocks: SeedingBlock[];
 }
 
-export const SEEDING_PLATFORMS: SeedingPlatform[] = ['insta', 'tiktok'];
+export const SEEDING_PLATFORMS: SeedingPlatform[] = ['insta', 'tiktok', 'tiktokFq'];
 
 export const SEEDING_CONFIG: Record<SeedingPlatform, PlatformConfig> = {
   insta: {
@@ -84,12 +85,18 @@ export const SEEDING_CONFIG: Record<SeedingPlatform, PlatformConfig> = {
       {
         label: 'S~T열(후크·PC)',
         columns: [
-          // 후크 비율은 % 없이 숫자만 (63.10% → 63.10)
-          { col: 'S', label: '후크 비율', field: 'hook', fmt: 'dec2' },
+          // 후크 비율은 정수로 반올림 + % (10.74% → 11%)
+          { col: 'S', label: '후크 비율', field: 'hook', fmt: 'pct0' },
           { col: 'T', label: 'PC', field: 'pc', fmt: 'int' },
         ],
       },
     ],
+  },
+  tiktokFq: {
+    label: '틱톡 (스파크애즈) 7일간 FQ',
+    pattern: /_S(_.*)?$/,
+    headers: { freq: 'frequency' },
+    blocks: [{ label: 'M열(7일 FQ)', columns: [{ col: 'M', label: '7일 FQ', field: 'freq', fmt: 'dec2' }] }],
   },
 };
 
@@ -169,6 +176,7 @@ export function parseSeedingExcel(buf: ArrayBuffer, platform: SeedingPlatform): 
 function fmtCell(v: number | null | undefined, fmt: Fmt): string {
   const n = v ?? 0;
   if (fmt === 'pct') return `${n.toFixed(2)}%`;
+  if (fmt === 'pct0') return `${Math.round(n)}%`;
   if (fmt === 'dec2') return n.toFixed(2);
   return String(Math.round(n));
 }
